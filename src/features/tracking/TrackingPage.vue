@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import CrudActionPanel from '@/components/CrudActionPanel.vue'
+import type { ApexOptions } from 'apexcharts'
+
+import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import SectionCard from '@/components/SectionCard.vue'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -52,10 +54,16 @@ const rows = [
   { id: 3, session: 'STK-BRANCHW-JUL', location: 'Branch West', window: '20 Jul - 24 Jul 2026', status: 'COMPLETED', verified: '98 / 98' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/stocktakes', note: 'List sesi stocktake dan status approval.' },
-  { method: 'GET', path: '/api/v1/assets/{asset_id}/tracking', note: 'Riwayat tracking pada asset detail.' },
-]
+const verificationMixOptions: ApexOptions = {
+  chart: { type: 'donut', background: 'transparent', fontFamily: 'inherit' },
+  labels: ['Verified', 'Pending', 'Unmatched'],
+  colors: ['#22c55e', '#f59e0b', '#ef4444'],
+  dataLabels: { enabled: false },
+  legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+  stroke: { width: 0 },
+}
+
+const verificationMixSeries = [551, 44, 17]
 </script>
 
 <template>
@@ -70,19 +78,23 @@ const endpoints: EndpointReference[] = [
         description="Sesi stocktake dengan indikator progres verifikasi."
         :rows="rows"
         :columns="columns"
+        :actions="[
+          { label: 'Create New', to: '/tracking/new', icon: 'Plus', tone: 'primary' },
+        ]"
+        :row-actions="{
+          editPath: (row) => `/tracking/${row.id}/edit`,
+          deleteTitle: 'Delete Stocktake Session',
+          resolveRowLabel: (row) => String(row.session ?? row.id),
+          deleteMessage: (row) => `Sesi ${String(row.session ?? row.id)} akan dihapus dari daftar stocktake. Pastikan progress verifikasi sudah tidak diperlukan.`,
+        }"
         search-placeholder="Cari session, location, atau status..."
         :search-keys="['session', 'location', 'status']"
       />
 
       <div class="space-y-6">
-        <CrudActionPanel
-          title="Stocktake CRUD"
-          description="Buat, ubah, atau hapus sesi stocktake dari halaman terpisah."
-          create-to="/tracking/new"
-          edit-to="/tracking/seed-stocktake/edit"
-          delete-to="/tracking/seed-stocktake/delete"
-        />
-        <ApiEndpointList title="Tracking API Map" :endpoints="endpoints" />
+        <SectionCard title="Verification Mix" description="Perbandingan progress verifikasi lintas sesi stocktake aktif.">
+          <BaseChart type="donut" :height="320" :options="verificationMixOptions" :series="verificationMixSeries" />
+        </SectionCard>
       </div>
     </section>
   </div>

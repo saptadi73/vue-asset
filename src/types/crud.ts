@@ -10,6 +10,9 @@ export interface CrudField {
   placeholder?: string
   helper?: string
   options?: CrudOption[]
+  required?: boolean
+  fullWidth?: boolean
+  readOnly?: boolean
 }
 
 export interface CrudSection {
@@ -39,5 +42,20 @@ export interface CrudConfig {
   resolveCreatePath?: (values: Record<string, string>) => string
   resolveEditPath?: (id: string, values: Record<string, string>) => string
   resolveDeletePath?: (id: string, values?: Record<string, string>) => string
+  validate?: (values: Record<string, string>) => string[]
+  mapToPayload?: (values: Record<string, string>) => Record<string, unknown>
+  sampleValues?: Record<string, string>
+  workflowActions?: Array<{
+    key: string
+    label: string
+    description: string
+    icon: string
+    tone: string
+    method: 'POST' | 'PATCH'
+    resolvePath: (id: string) => string
+    noteFieldLabel?: string
+    noteFieldPlaceholder?: string
+    nextState: string
+  }>
   sections: CrudSection[]
 }

@@ -17,7 +17,7 @@ const normalizePayload = (values: Record<string, string>) =>
   )
 
 export const submitCrudForm = async (config: CrudConfig, mode: 'create' | 'edit', values: Record<string, string>, id?: string) => {
-  const payload = normalizePayload(values)
+  const payload = config.mapToPayload ? config.mapToPayload(values) : normalizePayload(values)
   const path =
     mode === 'create'
       ? config.resolveCreatePath?.(values) || config.endpoints.create.path.replace('/api/v1', '')
@@ -40,5 +40,25 @@ export const deleteCrudRecord = async (config: CrudConfig, id: string, values: R
 
   return apiRequest(path, {
     method: 'DELETE',
+  })
+}
+
+export const submitWorkflowAction = async (
+  config: CrudConfig,
+  actionKey: string,
+  id: string,
+  note?: string,
+) => {
+  const action = config.workflowActions?.find((item) => item.key === actionKey)
+
+  if (!action) {
+    throw new ApiError('Workflow action belum dikonfigurasi untuk modul ini.', 400, 'WORKFLOW_ACTION_NOT_AVAILABLE')
+  }
+
+  const payload = note ? { note } : undefined
+
+  return apiRequest(action.resolvePath(id), {
+    method: action.method,
+    body: payload,
   })
 }

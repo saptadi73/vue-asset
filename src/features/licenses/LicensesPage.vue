@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import CrudActionPanel from '@/components/CrudActionPanel.vue'
+import type { ApexOptions } from 'apexcharts'
+
+import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import SectionCard from '@/components/SectionCard.vue'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -53,11 +55,16 @@ const rows = [
   { id: 4, product: 'Zoom Workplace', license_key: 'ZOOM-BIZ-2201', seats: '72 / 110', expires_at: '03 Nov 2026', status: 'ACTIVE' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/software-licenses', note: 'List lisensi software dan seat capacity.' },
-  { method: 'GET', path: '/api/v1/software-products', note: 'Master produk software untuk dropdown dan referensi.' },
-  { method: 'POST', path: '/api/v1/software-licenses', note: 'Pembuatan lisensi software baru.' },
-]
+const licenseSeatOptions: ApexOptions = {
+  chart: { type: 'donut', background: 'transparent', fontFamily: 'inherit' },
+  labels: ['Used Seats', 'Available Seats', 'Expired Allocation'],
+  colors: ['#0ea5e9', '#22c55e', '#f97316'],
+  dataLabels: { enabled: false },
+  legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+  stroke: { width: 0 },
+}
+
+const licenseSeatSeries = [298, 86, 14]
 </script>
 
 <template>
@@ -72,19 +79,23 @@ const endpoints: EndpointReference[] = [
         description="Daftar lisensi software beserta seat usage dan expiry monitoring."
         :rows="rows"
         :columns="columns"
+        :actions="[
+          { label: 'Create New', to: '/licenses/new', icon: 'Plus', tone: 'primary' },
+        ]"
+        :row-actions="{
+          editPath: (row) => `/licenses/${row.id}/edit`,
+          deleteTitle: 'Delete License',
+          resolveRowLabel: (row) => String(row.license_key ?? row.product ?? row.id),
+          deleteMessage: (row) => `Lisensi ${String(row.product ?? row.license_key ?? row.id)} akan dihapus dari daftar. Pastikan seat dan histori renewal tidak lagi dibutuhkan.`,
+        }"
         search-placeholder="Cari product, license key, atau status..."
         :search-keys="['product', 'license_key', 'status']"
       />
 
       <div class="space-y-6">
-        <CrudActionPanel
-          title="License CRUD"
-          description="Kelola data lisensi software dengan alur form yang konsisten."
-          create-to="/licenses/new"
-          edit-to="/licenses/seed-license/edit"
-          delete-to="/licenses/seed-license/delete"
-        />
-        <ApiEndpointList title="License API Map" :endpoints="endpoints" />
+        <SectionCard title="Seat Allocation Mix" description="Kapasitas lisensi dipetakan untuk membantu redistribusi seat.">
+          <BaseChart type="donut" :height="320" :options="licenseSeatOptions" :series="licenseSeatSeries" />
+        </SectionCard>
       </div>
     </section>
   </div>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import CrudActionPanel from '@/components/CrudActionPanel.vue'
+import type { ApexOptions } from 'apexcharts'
+
+import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -58,13 +59,20 @@ const assetRows = [
   { id: 8, asset_code: 'AST-0008', asset_name: 'Cisco Catalyst 9300', category: 'Network Device', location: 'Data Center', status: 'RETIRED' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/assets', note: 'Endpoint utama untuk list asset dengan search dan pagination.' },
-  { method: 'GET', path: '/api/v1/asset-categories', note: 'Filter category dan sumber dynamic attribute flow.' },
-  { method: 'GET', path: '/api/v1/asset-classes', note: 'Filter class dan referensi finansial/reference.' },
-  { method: 'GET', path: '/api/v1/asset-locations', note: 'Filter lokasi dan pemetaan transfer/assignment.' },
-  { method: 'GET', path: '/api/v1/assets/{asset_id}', note: 'Sumber asset detail dan seluruh tab lanjutannya.' },
-]
+const statusChartOptions: ApexOptions = {
+  chart: { type: 'bar', background: 'transparent', fontFamily: 'inherit', toolbar: { show: false } },
+  colors: ['#22c55e'],
+  plotOptions: { bar: { borderRadius: 6, horizontal: true } },
+  dataLabels: { enabled: false },
+  xaxis: {
+    categories: ['Active', 'Maintenance', 'Available', 'Retired'],
+    labels: { style: { colors: ['#94a3b8', '#94a3b8', '#94a3b8', '#94a3b8'] } },
+  },
+  yaxis: { labels: { style: { colors: ['#94a3b8'] } } },
+  grid: { borderColor: 'rgba(148, 163, 184, 0.18)' },
+}
+
+const statusChartSeries = [{ name: 'Assets', data: [3450, 622, 710, 200] }]
 </script>
 
 <template>
@@ -79,18 +87,20 @@ const endpoints: EndpointReference[] = [
         description="Tabel baku dengan search dan pagination yang siap dipakai lintas modul."
         :rows="assetRows"
         :columns="assetColumns"
+        :actions="[
+          { label: 'Create New', to: '/asset-registry/new', icon: 'Plus', tone: 'primary' },
+        ]"
+        :row-actions="{
+          editPath: (row) => `/asset-registry/${row.id}/edit`,
+          deleteTitle: 'Delete Asset',
+          resolveRowLabel: (row) => String(row.asset_code ?? row.asset_name ?? row.id),
+          deleteMessage: (row) => `Asset ${String(row.asset_name ?? row.asset_code ?? row.id)} akan dihapus dari daftar. Pastikan data ini memang tidak dibutuhkan lagi.`,
+        }"
         search-placeholder="Cari asset code, asset name, category, atau location..."
         :search-keys="['asset_code', 'asset_name', 'category', 'location']"
       />
 
       <div class="space-y-6">
-        <CrudActionPanel
-          title="Asset CRUD"
-          description="Shortcut ke halaman create, update, dan delete untuk asset."
-          create-to="/asset-registry/new"
-          edit-to="/asset-registry/seed-asset/edit"
-          delete-to="/asset-registry/seed-asset/delete"
-        />
         <SectionCard title="Recommended Workflow" description="Diambil dari dokumen functional blueprint.">
           <ol class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             <li>1. Pilih category dan muat attribute definitions.</li>
@@ -100,7 +110,9 @@ const endpoints: EndpointReference[] = [
           </ol>
         </SectionCard>
 
-        <ApiEndpointList title="Registry API Map" :endpoints="endpoints" />
+        <SectionCard title="Asset Status Split" description="Distribusi status utama untuk membantu prioritas tindak lanjut.">
+          <BaseChart type="bar" :height="300" :options="statusChartOptions" :series="statusChartSeries" />
+        </SectionCard>
       </div>
     </section>
   </div>

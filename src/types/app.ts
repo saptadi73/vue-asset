@@ -6,6 +6,20 @@ export interface DataTableColumn {
   formatter?: (value: unknown, row: Record<string, unknown>) => string
 }
 
+export interface DataTableHeaderAction {
+  label: string
+  to: string
+  icon: string
+  tone?: 'primary' | 'secondary' | 'danger'
+}
+
+export interface DataTableRowActions {
+  editPath?: (row: Record<string, unknown>) => string
+  deleteTitle?: string
+  deleteMessage?: (row: Record<string, unknown>) => string
+  resolveRowLabel?: (row: Record<string, unknown>) => string
+}
+
 export interface MetricCardItem {
   title: string
   value: string

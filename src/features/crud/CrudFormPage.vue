@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
@@ -19,28 +19,47 @@ const config = computed(() => getCrudConfig(crudKey.value))
 const itemId = computed(() => String(route.params.id || config.value?.seedId || 'sample-record'))
 
 const formState = reactive<Record<string, string>>({})
+const validationErrors = reactive<string[]>([])
 const requestState = reactive({
   isSubmitting: false,
   successMessage: '',
   errorMessage: '',
 })
 
-const ensureFormDefaults = () => {
+const syncFormState = () => {
+  const nextKeys = new Set<string>()
+
   for (const section of config.value?.sections || []) {
     for (const field of section.fields) {
-      if (!(field.key in formState)) {
-        formState[field.key] = ''
-      }
+      nextKeys.add(field.key)
     }
+  }
+
+  for (const key of Object.keys(formState)) {
+    if (!nextKeys.has(key)) {
+      delete formState[key]
+    }
+  }
+
+  const initialValues = config.value?.sampleValues || {}
+
+  for (const key of nextKeys) {
+    formState[key] = initialValues[key] || ''
+  }
+
+  if (mode.value === 'edit' && itemId.value) {
+    const editSeed = itemId.value.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+
+    if ('asset_name' in formState) formState.asset_name = `Sample ${editSeed}`
+    if ('name' in formState) formState.name = `Sample ${editSeed}`
+    if ('notes' in formState && !formState.notes) formState.notes = `Updated context for ${editSeed}.`
   }
 }
 
-ensureFormDefaults()
+watch([config, mode, itemId], syncFormState, { immediate: true })
 
 const pageTitle = computed(() => (mode.value === 'edit' ? config.value?.editTitle : config.value?.createTitle) || 'Form')
-const pageDescription = computed(() =>
-  (mode.value === 'edit' ? config.value?.editDescription : config.value?.createDescription) || '',
-)
+const pageDescription = computed(() => (mode.value === 'edit' ? config.value?.editDescription : config.value?.createDescription) || '')
 const submitLabel = computed(() => (mode.value === 'edit' ? 'Save Changes' : 'Create Record'))
 
 const endpoints = computed(() => {
@@ -51,9 +70,18 @@ const endpoints = computed(() => {
 const handleSubmit = async () => {
   if (!config.value) return
 
-  requestState.isSubmitting = true
+  validationErrors.splice(0, validationErrors.length)
   requestState.successMessage = ''
   requestState.errorMessage = ''
+
+  const errors = config.value.validate?.(formState) || []
+  if (errors.length) {
+    validationErrors.push(...errors)
+    requestState.errorMessage = 'Masih ada field yang perlu diperbaiki sebelum request dikirim.'
+    return
+  }
+
+  requestState.isSubmitting = true
 
   try {
     const response = await submitCrudForm(config.value, mode.value as 'create' | 'edit', formState, itemId.value)
@@ -87,9 +115,9 @@ const handleSubmit = async () => {
     <div class="grid gap-6 2xl:grid-cols-[1.55fr_0.95fr]">
       <div class="space-y-6">
         <SectionCard
-          v-if="requestState.successMessage || requestState.errorMessage"
+          v-if="validationErrors.length || requestState.successMessage || requestState.errorMessage"
           :title="requestState.successMessage ? 'Request Success' : 'Request Failed'"
-          :description="requestState.successMessage ? 'Backend merespons request CRUD dengan sukses.' : 'Periksa token, payload, dan endpoint yang dipanggil.'"
+          :description="requestState.successMessage ? 'Backend merespons request CRUD dengan sukses.' : 'Periksa field wajib, token, payload, dan endpoint yang dipanggil.'"
         >
           <div
             class="rounded-2xl border px-4 py-3 text-sm leading-6"
@@ -99,7 +127,10 @@ const handleSubmit = async () => {
                 : 'border-rose-200 bg-rose-50/80 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200'
             "
           >
-            {{ requestState.successMessage || requestState.errorMessage }}
+            <p>{{ requestState.successMessage || requestState.errorMessage }}</p>
+            <ul v-if="validationErrors.length" class="mt-3 list-disc space-y-1 pl-5">
+              <li v-for="error in validationErrors" :key="error">{{ error }}</li>
+            </ul>
           </div>
         </SectionCard>
 
@@ -116,7 +147,7 @@ const handleSubmit = async () => {
               :model-value="formState[field.key] ?? ''"
               @update:model-value="formState[field.key] = $event"
               :field="field"
-              :class="field.type === 'textarea' ? 'md:col-span-2' : ''"
+              :class="field.fullWidth || field.type === 'textarea' ? 'md:col-span-2' : ''"
             />
           </div>
         </SectionCard>
@@ -128,7 +159,7 @@ const handleSubmit = async () => {
         <SectionCard title="Frontend Note" description="Halaman ini sudah siap untuk dihubungkan ke service API nyata.">
           <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             <p>Struktur field dibangun dari dokumen implementasi agar tiap feature punya section yang jelas.</p>
-            <p>Mode `Create` dan `Update` sekarang sudah memanggil endpoint backend memakai bearer token dari localStorage frontend.</p>
+            <p>Mode `Create` dan `Update` sekarang sudah memakai sample seed, validasi per modul, dan endpoint backend dengan bearer token dari localStorage frontend.</p>
             <p>Setelah submit sukses, halaman akan kembali ke list modul terkait secara otomatis.</p>
           </div>
         </SectionCard>

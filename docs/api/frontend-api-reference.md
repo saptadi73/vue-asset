@@ -15,6 +15,10 @@ File yang bisa dijadikan rujukan:
 - `artifacts/frontend_endpoint_samples.json`
 - `artifacts/postman_seed_environment.json`
 - `artifacts/postman_seed_collection.json`
+- `docs/api/frontend-crud-ui-options.md`
+- `docs/api/frontend-crud-state-options.md`
+- `docs/api/frontend-crud-implementation-checklist.md`
+- `docs/api/frontend-crud-field-mapping.md`
 - `docs/api/frontend-seed-scenarios.md`
 - `docs/api/frontend-page-endpoint-map.md`
 - `docs/api/frontend-functional-blueprint.md`
@@ -34,6 +38,10 @@ Rekomendasi pemakaian untuk frontend:
 - buka `frontend_endpoint_samples.json` untuk melihat response riil
 - gunakan `postman_seed_environment.json` bila frontend ingin uji cepat di Postman
 - gunakan `postman_seed_collection.json` untuk import request siap pakai
+- buka `frontend-crud-ui-options.md` untuk opsi implementasi form, action, dan validasi frontend
+- buka `frontend-crud-state-options.md` untuk opsi panel next state dan workflow action frontend
+- buka `frontend-crud-implementation-checklist.md` untuk checklist implementasi dan QA halaman CRUD
+- buka `frontend-crud-field-mapping.md` untuk mapping field UI ke payload backend per modul
 - buka `frontend-seed-scenarios.md` untuk memahami alur pembentukan datanya
 - buka `frontend-page-endpoint-map.md` untuk mapping halaman ke endpoint
 - buka `frontend-functional-blueprint.md` untuk menu, halaman, dashboard, dan workflow

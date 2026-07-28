@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { ApexOptions } from 'apexcharts'
 
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
 import BaseChart from '@/components/BaseChart.vue'
-import CrudActionPanel from '@/components/CrudActionPanel.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import StateFlowPanel from '@/components/StateFlowPanel.vue'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -113,13 +112,16 @@ const requestRows = [
   { id: 5, request_no: 'MR-2026-125', asset: 'AC Floor 3 East', priority: 'MEDIUM', status: 'ASSIGNED' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/maintenance/requests', note: 'List maintenance request terbuka.' },
-  { method: 'GET', path: '/api/v1/maintenance/work-orders', note: 'Work order aktif dan histori completion.' },
-  { method: 'GET', path: '/api/v1/maintenance/reports/backlog', note: 'Backlog summary untuk dashboard maintenance.' },
-  { method: 'GET', path: '/api/v1/maintenance/reports/sla', note: 'SLA compliance chart atau summary.' },
-  { method: 'GET', path: '/api/v1/maintenance/reports/reliability', note: 'Reliability trend dan failure monitoring.' },
-]
+const priorityMixOptions: ApexOptions = {
+  chart: { type: 'donut', background: 'transparent', fontFamily: 'inherit' },
+  labels: ['High', 'Medium', 'Low'],
+  colors: ['#ef4444', '#f59e0b', '#22c55e'],
+  dataLabels: { enabled: false },
+  legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+  stroke: { width: 0 },
+}
+
+const priorityMixSeries = [8, 23, 42]
 </script>
 
 <template>
@@ -134,24 +136,68 @@ const endpoints: EndpointReference[] = [
       </SectionCard>
 
       <div class="space-y-6">
-        <CrudActionPanel
-          title="Maintenance CRUD"
-          description="Kelola maintenance request melalui halaman create, update, dan delete."
-          create-to="/maintenance/new"
-          edit-to="/maintenance/seed-maintenance/edit"
-          delete-to="/maintenance/seed-maintenance/delete"
-        />
-        <ApiEndpointList title="Maintenance API Map" :endpoints="endpoints" />
+        <SectionCard title="Backlog Priority Mix" description="Distribusi backlog untuk membantu prioritas dispatch dan vendor routing.">
+          <BaseChart type="donut" :height="320" :options="priorityMixOptions" :series="priorityMixSeries" />
+        </SectionCard>
       </div>
     </section>
 
-    <DataTable
-      title="Open Maintenance Requests"
-      description="Request prioritas tinggi dan menengah untuk ditindaklanjuti."
-      :rows="requestRows"
-      :columns="requestColumns"
-      search-placeholder="Cari request number, asset, priority, atau status..."
-      :search-keys="['request_no', 'asset', 'priority', 'status']"
-    />
+    <section class="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <DataTable
+        title="Open Maintenance Requests"
+        description="Request prioritas tinggi dan menengah untuk ditindaklanjuti."
+        :rows="requestRows"
+        :columns="requestColumns"
+        :actions="[
+          { label: 'Create New', to: '/maintenance/new', icon: 'Plus', tone: 'primary' },
+        ]"
+        :row-actions="{
+          editPath: (row) => `/maintenance/${row.id}/edit`,
+          deleteTitle: 'Delete Maintenance Request',
+          resolveRowLabel: (row) => String(row.request_no ?? row.asset ?? row.id),
+          deleteMessage: (row) => `Request ${String(row.request_no ?? row.id)} untuk ${String(row.asset ?? 'asset terkait')} akan dihapus dari backlog tampilan ini.`,
+        }"
+        search-placeholder="Cari request number, asset, priority, atau status..."
+        :search-keys="['request_no', 'asset', 'priority', 'status']"
+      />
+
+      <div class="space-y-6">
+        <StateFlowPanel
+          title="Next State Actions"
+          description="Percepatan perubahan state untuk request atau work order yang sedang berjalan."
+          :items="[
+            {
+              label: 'Move to Assigned',
+              detail: 'Pakai saat request sudah diterima dan siap ditugaskan ke tim.',
+              to: '/maintenance/seed-maintenance/edit',
+              icon: 'UserCheck',
+              tone: 'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200',
+            },
+            {
+              label: 'Move to In Progress',
+              detail: 'Gunakan ketika teknisi mulai menangani tiket di lapangan.',
+              to: '/maintenance/seed-maintenance/edit',
+              icon: 'Wrench',
+              tone: 'border-violet-200 bg-violet-50/70 text-violet-800 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200',
+            },
+            {
+              label: 'Move to Completed',
+              detail: 'Tutup request setelah eksekusi selesai dan hasil diverifikasi.',
+              to: '/maintenance/seed-maintenance/edit',
+              icon: 'CircleCheckBig',
+              tone: 'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200',
+            },
+          ]"
+        />
+
+        <SectionCard title="Dispatch Notes" description="Panduan singkat sebelum memindahkan state request.">
+          <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p>Pastikan prioritas dan assignment team sudah sesuai sebelum request dipindahkan ke tahap berikutnya.</p>
+            <p>Untuk work order vendor, validasi dukungan kontrak dan kebutuhan spare part sebelum status dijalankan.</p>
+            <p>Pola tombol next state ini bisa kita sambungkan ke action endpoint spesifik setelah backend final.</p>
+          </div>
+        </SectionCard>
+      </div>
+    </section>
   </div>
 </template>

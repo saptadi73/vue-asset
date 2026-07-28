@@ -1,0 +1,17 @@
+{
+  "name": "Gagak Rimang Asset Hub",
+  "short_name": "Asset Hub",
+  "description": "Asset management workspace untuk operasional, maintenance, tracking, dan reporting.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/asset-management-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

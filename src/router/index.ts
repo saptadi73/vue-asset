@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AssetRegistryPage from '@/features/assets/AssetRegistryPage.vue'
 import CrudDeletePage from '@/features/crud/CrudDeletePage.vue'
 import CrudFormPage from '@/features/crud/CrudFormPage.vue'
+import WorkflowActionPage from '@/features/crud/WorkflowActionPage.vue'
 import DashboardPage from '@/features/dashboard/DashboardPage.vue'
 import LeasesPage from '@/features/leases/LeasesPage.vue'
 import LicensesPage from '@/features/licenses/LicensesPage.vue'
@@ -98,6 +99,15 @@ const router = createRouter({
       meta: {
         title: 'Delete Transfer',
         description: 'Konfirmasi delete untuk transfer.',
+        crudKey: 'transfers',
+      },
+    },
+    {
+      path: '/transfers/:id/workflow/:actionKey',
+      component: WorkflowActionPage,
+      meta: {
+        title: 'Transfer Workflow Action',
+        description: 'Halaman command khusus untuk perubahan state transfer.',
         crudKey: 'transfers',
       },
     },

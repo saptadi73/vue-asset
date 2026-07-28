@@ -78,12 +78,14 @@ onMounted(() => {
           >
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-center gap-3">
-                <div class="rounded-2xl bg-slate-950 p-3 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-950">
-                  <BaseIcon name="ShieldCheck" :size="22" />
-                </div>
+                <img
+                  src="/asset-management-icon.png"
+                  alt="Asset Management"
+                  class="h-14 w-14 rounded-2xl object-cover shadow-lg shadow-slate-900/20 ring-1 ring-slate-200/80 dark:ring-white/10"
+                >
                 <div v-if="!isDesktopSidebarCollapsed">
-                  <p class="font-display text-lg font-semibold tracking-tight">{{ appConfig.appName }}</p>
-                  <p class="text-sm text-slate-600 dark:text-slate-300">Asset management workspace</p>
+                  <p class="font-display text-lg font-semibold tracking-tight">Asset Management</p>
+                  <p class="text-sm text-slate-600 dark:text-slate-300">Asset Hub</p>
                 </div>
               </div>
               <div class="flex flex-col items-end gap-2">
@@ -360,8 +362,17 @@ onMounted(() => {
         <div class="mb-6 rounded-[28px] bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(99,102,241,0.08),rgba(244,114,182,0.10))] p-4 dark:bg-[linear-gradient(135deg,rgba(14,165,233,0.22),rgba(56,189,248,0.08),rgba(14,116,144,0.16))]">
           <div class="flex items-center justify-between">
             <div>
-              <p class="font-display text-lg font-semibold tracking-tight">{{ appConfig.appName }}</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Mobile navigation</p>
+              <div class="flex items-center gap-3">
+                <img
+                  src="/asset-management-icon.png"
+                  alt="Asset Management"
+                  class="h-12 w-12 rounded-2xl object-cover shadow-lg shadow-slate-900/20 ring-1 ring-slate-200/80 dark:ring-white/10"
+                >
+                <div>
+                  <p class="font-display text-lg font-semibold tracking-tight">Asset Management</p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Asset Hub</p>
+                </div>
+              </div>
             </div>
           <button
             type="button"

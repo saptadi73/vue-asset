@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import CrudActionPanel from '@/components/CrudActionPanel.vue'
+import type { ApexOptions } from 'apexcharts'
+
+import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -53,12 +54,20 @@ const rows = [
   { id: 5, type: 'Asset Category', code: 'PRNTER', name: 'Printer', active: 'No' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/asset-categories', note: 'Master category untuk filter dan form asset.' },
-  { method: 'GET', path: '/api/v1/asset-classes', note: 'Master class untuk konfigurasi financial/reference.' },
-  { method: 'GET', path: '/api/v1/asset-locations', note: 'Master lokasi untuk navigasi asset dan transfer.' },
-  { method: 'GET', path: '/api/v1/business-partners', note: 'Master vendor/supplier untuk ownership dan maintenance.' },
-]
+const masterSpreadOptions: ApexOptions = {
+  chart: { type: 'bar', background: 'transparent', fontFamily: 'inherit', toolbar: { show: false } },
+  colors: ['#8b5cf6'],
+  plotOptions: { bar: { borderRadius: 6, horizontal: true } },
+  dataLabels: { enabled: false },
+  xaxis: {
+    categories: ['Categories', 'Classes', 'Locations', 'Partners'],
+    labels: { style: { colors: ['#94a3b8', '#94a3b8', '#94a3b8', '#94a3b8'] } },
+  },
+  yaxis: { labels: { style: { colors: ['#94a3b8'] } } },
+  grid: { borderColor: 'rgba(148, 163, 184, 0.18)' },
+}
+
+const masterSpreadSeries = [{ name: 'Records', data: [18, 42, 61, 24] }]
 </script>
 
 <template>
@@ -73,18 +82,20 @@ const endpoints: EndpointReference[] = [
         description="Tabel referensi utama yang mendukung seluruh modul transaksi."
         :rows="rows"
         :columns="columns"
+        :actions="[
+          { label: 'Create New', to: '/master-data/new', icon: 'Plus', tone: 'primary' },
+        ]"
+        :row-actions="{
+          editPath: (row) => `/master-data/${row.id}/edit`,
+          deleteTitle: 'Delete Master Record',
+          resolveRowLabel: (row) => String(row.code ?? row.name ?? row.id),
+          deleteMessage: (row) => `Master record ${String(row.code ?? row.name ?? row.id)} akan dihapus dari referensi. Pastikan tidak sedang dipakai oleh modul transaksi.`,
+        }"
         search-placeholder="Cari type, code, atau name..."
         :search-keys="['type', 'code', 'name']"
       />
 
       <div class="space-y-6">
-        <CrudActionPanel
-          title="Master Data CRUD"
-          description="Kelola category, class, location, atau partner lewat form generik."
-          create-to="/master-data/new"
-          edit-to="/master-data/seed-master/edit"
-          delete-to="/master-data/seed-master/delete"
-        />
         <SectionCard title="Why It Matters" description="Master data dibuat tetap ringkas tetapi kuat.">
           <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             <p>Modul master data akan menjadi sumber dropdown, filter, dan validasi untuk feature transactional.</p>
@@ -92,7 +103,9 @@ const endpoints: EndpointReference[] = [
           </div>
         </SectionCard>
 
-        <ApiEndpointList title="Master Data API Map" :endpoints="endpoints" />
+        <SectionCard title="Master Footprint" description="Komposisi record master yang menopang modul transaksional.">
+          <BaseChart type="bar" :height="300" :options="masterSpreadOptions" :series="masterSpreadSeries" />
+        </SectionCard>
       </div>
     </section>
   </div>

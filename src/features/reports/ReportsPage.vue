@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
+import type { ApexOptions } from 'apexcharts'
+
+import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -53,11 +55,16 @@ const rows = [
   { id: 4, asset_code: 'AST-0491', asset_name: 'iPad Retail Demo', location: 'Branch West', last_verified: '27 Jul 2026', risk: 'LOW' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/reports/unverified-assets', note: 'Report utama untuk exception verifikasi asset.' },
-  { method: 'GET', path: '/api/v1/maintenance/reports/cost', note: 'Ringkasan biaya maintenance.' },
-  { method: 'GET', path: '/api/v1/maintenance/reports/failure-analysis', note: 'Analisis failure untuk asset prioritas.' },
-]
+const riskMixOptions: ApexOptions = {
+  chart: { type: 'donut', background: 'transparent', fontFamily: 'inherit' },
+  labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+  colors: ['#ef4444', '#f59e0b', '#22c55e'],
+  dataLabels: { enabled: false },
+  legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+  stroke: { width: 0 },
+}
+
+const riskMixSeries = [18, 15, 8]
 </script>
 
 <template>
@@ -84,7 +91,9 @@ const endpoints: EndpointReference[] = [
           </div>
         </SectionCard>
 
-        <ApiEndpointList title="Report API Map" :endpoints="endpoints" />
+        <SectionCard title="Risk Composition" description="Pemetaan cepat intensitas risiko dari laporan exception aktif.">
+          <BaseChart type="donut" :height="320" :options="riskMixOptions" :series="riskMixSeries" />
+        </SectionCard>
       </div>
     </section>
   </div>

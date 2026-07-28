@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import CrudActionPanel from '@/components/CrudActionPanel.vue'
+import type { ApexOptions } from 'apexcharts'
+
+import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import SectionCard from '@/components/SectionCard.vue'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -53,12 +55,20 @@ const rows = [
   { id: 4, contract: 'LS-2026-004', vendor: 'PT Logistic Equip', period: '01 Apr 2025 - 31 Mar 2026', status: 'CLOSED', payment: 'Rp23 jt' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/lease-contracts', note: 'List kontrak lease untuk monitoring status aktif.' },
-  { method: 'GET', path: '/api/v1/lease-contracts/{lease_contract_id}', note: 'Header kontrak, item asset, dan payment.' },
-  { method: 'POST', path: '/api/v1/lease-contracts', note: 'Membuat kontrak lease baru.' },
-  { method: 'GET', path: '/api/v1/lease-contracts/{lease_contract_id}/payments', note: 'Riwayat payment periodik.' },
-]
+const leaseExposureOptions: ApexOptions = {
+  chart: { type: 'bar', background: 'transparent', fontFamily: 'inherit', toolbar: { show: false } },
+  colors: ['#0ea5e9'],
+  plotOptions: { bar: { borderRadius: 6, columnWidth: '44%' } },
+  dataLabels: { enabled: false },
+  xaxis: {
+    categories: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels: { style: { colors: ['#94a3b8', '#94a3b8', '#94a3b8', '#94a3b8', '#94a3b8', '#94a3b8'] } },
+  },
+  yaxis: { labels: { style: { colors: ['#94a3b8'] } } },
+  grid: { borderColor: 'rgba(148, 163, 184, 0.18)' },
+}
+
+const leaseExposureSeries = [{ name: 'Spend (jt)', data: [182, 176, 171, 168, 165, 160] }]
 </script>
 
 <template>
@@ -73,19 +83,23 @@ const endpoints: EndpointReference[] = [
         description="Monitoring kontrak aktif, due date, dan ringkasan payment."
         :rows="rows"
         :columns="columns"
+        :actions="[
+          { label: 'Create New', to: '/leases/new', icon: 'Plus', tone: 'primary' },
+        ]"
+        :row-actions="{
+          editPath: (row) => `/leases/${row.id}/edit`,
+          deleteTitle: 'Delete Lease Contract',
+          resolveRowLabel: (row) => String(row.contract ?? row.id),
+          deleteMessage: (row) => `Kontrak ${String(row.contract ?? row.id)} akan dihapus dari daftar lease. Pastikan dampak ke vendor dan histori payment sudah dicek.`,
+        }"
         search-placeholder="Cari kontrak, vendor, atau periode..."
         :search-keys="['contract', 'vendor', 'period']"
       />
 
       <div class="space-y-6">
-        <CrudActionPanel
-          title="Lease CRUD"
-          description="Masuk ke halaman create, update, atau delete kontrak lease."
-          create-to="/leases/new"
-          edit-to="/leases/seed-lease/edit"
-          delete-to="/leases/seed-lease/delete"
-        />
-        <ApiEndpointList title="Lease API Map" :endpoints="endpoints" />
+        <SectionCard title="Lease Cost Projection" description="Estimasi beban kontrak bulanan untuk semester aktif.">
+          <BaseChart type="bar" :height="300" :options="leaseExposureOptions" :series="leaseExposureSeries" />
+        </SectionCard>
       </div>
     </section>
   </div>

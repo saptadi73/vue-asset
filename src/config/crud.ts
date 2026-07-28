@@ -27,15 +27,47 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveCreatePath: () => '/assets',
     resolveEditPath: (id) => `/assets/${id}`,
     resolveDeletePath: (id) => `/assets/${id}`,
+    sampleValues: {
+      asset_code: 'AST-2026-001',
+      asset_name: 'Dell Latitude 7440',
+      category: 'laptop',
+      asset_class: 'it-4y',
+      location: 'hq-wh',
+      status: 'ACTIVE',
+      custodian: 'IT Operations',
+      purchase_date: '2026-07-10',
+      purchase_cost: '25000000',
+      replacement_priority: 'medium',
+      dynamic_attributes: 'CPU: Intel Core Ultra 7\nRAM: 32 GB\nStorage: 1 TB SSD',
+    },
+    validate: (values) => {
+      const errors: string[] = []
+      if (!values.asset_code) errors.push('Asset Code wajib diisi.')
+      if (!values.asset_name) errors.push('Asset Name wajib diisi.')
+      if (!values.category) errors.push('Category wajib dipilih.')
+      if (!values.asset_class) errors.push('Asset Class wajib dipilih.')
+      return errors
+    },
+    mapToPayload: (values) => ({
+      asset_code: values.asset_code,
+      asset_name: values.asset_name,
+      asset_category_id: values.category,
+      asset_class_id: values.asset_class,
+      current_location_id: values.location || undefined,
+      status: values.status || undefined,
+      purchase_date: values.purchase_date || undefined,
+      purchase_cost: values.purchase_cost ? Number(values.purchase_cost) : undefined,
+      replacement_priority: values.replacement_priority || undefined,
+    }),
     sections: [
       {
         title: 'Primary Asset Data',
         description: 'Data inti yang wajib ada sebelum asset dipakai oleh modul lain.',
         fields: [
-          { key: 'asset_code', label: 'Asset Code', type: 'text', placeholder: 'AST-2026-001' },
-          { key: 'asset_name', label: 'Asset Name', type: 'text', placeholder: 'Dell Latitude 7440' },
-          { key: 'category', label: 'Category', type: 'select', options: [{ label: 'Laptop', value: 'laptop' }, { label: 'Vehicle', value: 'vehicle' }, { label: 'Printer', value: 'printer' }] },
-          { key: 'asset_class', label: 'Asset Class', type: 'select', options: [{ label: 'IT-4Y', value: 'it-4y' }, { label: 'VEH-8Y', value: 'veh-8y' }, { label: 'OFF-5Y', value: 'off-5y' }] },
+          { key: 'asset_code', label: 'Asset Code', type: 'text', placeholder: 'AST-2026-001', required: true },
+          { key: 'asset_name', label: 'Asset Name', type: 'text', placeholder: 'Dell Latitude 7440', required: true },
+          { key: 'category', label: 'Category', type: 'select', required: true, options: [{ label: 'Laptop', value: 'laptop' }, { label: 'Vehicle', value: 'vehicle' }, { label: 'Printer', value: 'printer' }] },
+          { key: 'asset_class', label: 'Asset Class', type: 'select', required: true, options: [{ label: 'IT-4Y', value: 'it-4y' }, { label: 'VEH-8Y', value: 'veh-8y' }, { label: 'OFF-5Y', value: 'off-5y' }] },
         ],
       },
       {
@@ -54,7 +86,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
         fields: [
           { key: 'purchase_cost', label: 'Purchase Cost', type: 'number', placeholder: '25000000' },
           { key: 'replacement_priority', label: 'Replacement Priority', type: 'select', options: [{ label: 'Low', value: 'low' }, { label: 'Medium', value: 'medium' }, { label: 'High', value: 'high' }] },
-          { key: 'dynamic_attributes', label: 'Dynamic Attributes', type: 'textarea', placeholder: 'CPU: Intel Core Ultra 7, RAM: 32 GB, SSD: 1 TB' },
+          { key: 'dynamic_attributes', label: 'Dynamic Attributes', type: 'textarea', fullWidth: true, placeholder: 'CPU: Intel Core Ultra 7, RAM: 32 GB, SSD: 1 TB' },
         ],
       },
     ],
@@ -80,13 +112,79 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveCreatePath: () => '/asset-transfers',
     resolveEditPath: (id) => `/asset-transfers/${id}`,
     resolveDeletePath: (id) => `/asset-transfers/${id}`,
+    sampleValues: {
+      transfer_number: 'TRF-2026-071',
+      transfer_date: '2026-07-28',
+      movement_purpose: 'Operational allocation',
+      from_location: 'hq-wh',
+      to_location: 'site-a',
+      requested_by: 'Warehouse Lead',
+      notes: 'Pastikan asset diterima oleh PIC lokasi tujuan.',
+    },
+    validate: (values) => {
+      const errors: string[] = []
+      if (!values.transfer_date) errors.push('Transfer Date wajib diisi.')
+      if (!values.from_location) errors.push('From Location wajib dipilih.')
+      if (!values.to_location) errors.push('To Location wajib dipilih.')
+      if (values.from_location && values.to_location && values.from_location === values.to_location) {
+        errors.push('From Location dan To Location tidak boleh sama.')
+      }
+      return errors
+    },
+    mapToPayload: (values) => ({
+      transfer_number: values.transfer_number || undefined,
+      transfer_date: values.transfer_date,
+      movement_purpose: values.movement_purpose || undefined,
+      from_location_id: values.from_location,
+      to_location_id: values.to_location,
+      requested_by: values.requested_by || undefined,
+      notes: values.notes || undefined,
+    }),
+    workflowActions: [
+      {
+        key: 'submit',
+        label: 'Move to Submitted',
+        description: 'Ajukan draft transfer ke tahap submitted.',
+        icon: 'Send',
+        tone: 'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200',
+        method: 'POST',
+        resolvePath: (id) => `/asset-transfers/${id}/submit`,
+        noteFieldLabel: 'Submission Note',
+        noteFieldPlaceholder: 'Tambahkan catatan saat transfer diajukan.',
+        nextState: 'SUBMITTED',
+      },
+      {
+        key: 'approve',
+        label: 'Move to Approved',
+        description: 'Setujui transfer agar dapat dilanjutkan ke penerimaan.',
+        icon: 'BadgeCheck',
+        tone: 'border-violet-200 bg-violet-50/70 text-violet-800 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200',
+        method: 'POST',
+        resolvePath: (id) => `/asset-transfers/${id}/approve`,
+        noteFieldLabel: 'Approval Note',
+        noteFieldPlaceholder: 'Tambahkan catatan approval jika diperlukan.',
+        nextState: 'APPROVED',
+      },
+      {
+        key: 'complete',
+        label: 'Move to Completed',
+        description: 'Selesaikan transfer setelah asset diterima dan dicek.',
+        icon: 'PackageCheck',
+        tone: 'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200',
+        method: 'POST',
+        resolvePath: (id) => `/asset-transfers/${id}/complete`,
+        noteFieldLabel: 'Completion Note',
+        noteFieldPlaceholder: 'Catatan penerimaan atau kondisi akhir asset.',
+        nextState: 'COMPLETED',
+      },
+    ],
     sections: [
       {
         title: 'Transfer Header',
         description: 'Identitas perpindahan asset.',
         fields: [
           { key: 'transfer_number', label: 'Transfer Number', type: 'text', placeholder: 'TRF-2026-077' },
-          { key: 'transfer_date', label: 'Transfer Date', type: 'date' },
+          { key: 'transfer_date', label: 'Transfer Date', type: 'date', required: true },
           { key: 'movement_purpose', label: 'Movement Purpose', type: 'text', placeholder: 'Operational allocation' },
         ],
       },
@@ -94,10 +192,10 @@ export const crudConfigs: Record<string, CrudConfig> = {
         title: 'Route and Approval',
         description: 'Lokasi asal, tujuan, dan requester transfer.',
         fields: [
-          { key: 'from_location', label: 'From Location', type: 'select', options: [{ label: 'HQ Warehouse', value: 'hq-wh' }, { label: 'Main Office', value: 'main-office' }] },
-          { key: 'to_location', label: 'To Location', type: 'select', options: [{ label: 'Site A', value: 'site-a' }, { label: 'Branch West', value: 'branch-west' }] },
+          { key: 'from_location', label: 'From Location', type: 'select', required: true, options: [{ label: 'HQ Warehouse', value: 'hq-wh' }, { label: 'Main Office', value: 'main-office' }] },
+          { key: 'to_location', label: 'To Location', type: 'select', required: true, options: [{ label: 'Site A', value: 'site-a' }, { label: 'Branch West', value: 'branch-west' }] },
           { key: 'requested_by', label: 'Requested By', type: 'text', placeholder: 'Warehouse Lead' },
-          { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Tambahkan catatan handling atau kondisi asset selama transfer.' },
+          { key: 'notes', label: 'Notes', type: 'textarea', fullWidth: true, placeholder: 'Tambahkan catatan handling atau kondisi asset selama transfer.' },
         ],
       },
     ],
@@ -123,6 +221,24 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveCreatePath: () => '/lease-contracts',
     resolveEditPath: (id) => `/lease-contracts/${id}`,
     resolveDeletePath: (id) => `/lease-contracts/${id}`,
+    sampleValues: {
+      contract_number: 'LS-2026-005',
+      vendor_name: 'PT Rental Teknologi',
+      status: 'ACTIVE',
+      start_date: '2026-07-01',
+      end_date: '2026-12-31',
+      monthly_payment: '42000000',
+      notes: 'Kontrak lease untuk laptop project team.',
+    },
+    validate: (values) => {
+      const errors: string[] = []
+      if (!values.contract_number) errors.push('Contract Number wajib diisi.')
+      if (!values.start_date || !values.end_date) errors.push('Periode kontrak wajib lengkap.')
+      if (values.start_date && values.end_date && values.end_date < values.start_date) {
+        errors.push('End Date tidak boleh lebih awal dari Start Date.')
+      }
+      return errors
+    },
     sections: [
       {
         title: 'Contract Identity',
@@ -166,6 +282,23 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveCreatePath: () => '/software-licenses',
     resolveEditPath: (id) => `/software-licenses/${id}`,
     resolveDeletePath: (id) => `/software-licenses/${id}`,
+    sampleValues: {
+      product_name: 'Microsoft 365 E3',
+      license_key: 'M365-E3-09A2',
+      status: 'ACTIVE',
+      seat_capacity: '220',
+      used_seats: '188',
+      expires_at: '2026-12-31',
+      notes: 'Renewal window Q4 2026',
+    },
+    validate: (values) => {
+      const errors: string[] = []
+      const seatCapacity = Number(values.seat_capacity || '0')
+      const usedSeats = Number(values.used_seats || '0')
+      if (!values.product_name) errors.push('Product Name wajib diisi.')
+      if (seatCapacity > 0 && usedSeats > seatCapacity) errors.push('Used Seats tidak boleh melebihi Seat Capacity.')
+      return errors
+    },
     sections: [
       {
         title: 'License Identity',
@@ -209,6 +342,22 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveCreatePath: () => '/stocktakes',
     resolveEditPath: (id) => `/stocktakes/${id}`,
     resolveDeletePath: (id) => `/stocktakes/${id}`,
+    sampleValues: {
+      session_name: 'STK-HQ-AUG',
+      start_date: '2026-08-01',
+      end_date: '2026-08-05',
+      location: 'hq-wh',
+      approver: 'Finance Controller',
+      notes: 'Target coverage minimal 95 persen.',
+    },
+    validate: (values) => {
+      const errors: string[] = []
+      if (!values.session_name) errors.push('Session Name wajib diisi.')
+      if (values.start_date && values.end_date && values.end_date < values.start_date) {
+        errors.push('End Date tidak boleh lebih awal dari Start Date.')
+      }
+      return errors
+    },
     sections: [
       {
         title: 'Session Setup',
@@ -251,6 +400,31 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveCreatePath: () => '/maintenance/requests',
     resolveEditPath: (id) => `/maintenance/requests/${id}`,
     resolveDeletePath: (id) => `/maintenance/requests/${id}`,
+    sampleValues: {
+      request_number: 'MR-2026-126',
+      asset_name: 'Forklift FL-12',
+      priority: 'HIGH',
+      request_date: '2026-07-28',
+      symptom: 'Mesin berhenti saat beban di atas 60% dan muncul bunyi abnormal.',
+      team: 'Mechanical Team A',
+      requires_vendor: 'yes',
+    },
+    validate: (values) => {
+      const errors: string[] = []
+      if (!values.asset_name) errors.push('Asset Name wajib diisi.')
+      if (!values.priority) errors.push('Priority wajib dipilih.')
+      if (!values.symptom) errors.push('Symptom wajib dijelaskan.')
+      return errors
+    },
+    mapToPayload: (values) => ({
+      request_number: values.request_number || undefined,
+      asset_id: values.asset_name,
+      priority_code: values.priority,
+      request_date: values.request_date || undefined,
+      symptom_description: values.symptom,
+      maintenance_team_id: values.team || undefined,
+      requires_vendor: values.requires_vendor === 'yes',
+    }),
     sections: [
       {
         title: 'Request Identity',
@@ -266,7 +440,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
         title: 'Symptoms and Routing',
         description: 'Deskripsi gejala, tim, dan approver awal.',
         fields: [
-          { key: 'symptom', label: 'Symptom', type: 'textarea', placeholder: 'Mesin berhenti saat beban di atas 60% dan muncul bunyi abnormal.' },
+          { key: 'symptom', label: 'Symptom', type: 'textarea', required: true, fullWidth: true, placeholder: 'Mesin berhenti saat beban di atas 60% dan muncul bunyi abnormal.' },
           { key: 'team', label: 'Assigned Team', type: 'text', placeholder: 'Mechanical Team A' },
           { key: 'requires_vendor', label: 'Requires Vendor', type: 'select', options: yesNoOptions },
         ],
@@ -351,6 +525,54 @@ export const crudConfigs: Record<string, CrudConfig> = {
         ],
       },
     ],
+    sampleValues: {
+      master_type: 'asset-category',
+      code: 'LAPTOP',
+      name: 'Laptop',
+      is_active: 'yes',
+      description: 'Digunakan untuk category perangkat laptop korporat.',
+    },
+    validate: (values) => {
+      const errors: string[] = []
+      if (!values.master_type) errors.push('Master Type wajib dipilih.')
+      if (!values.code) errors.push('Code wajib diisi.')
+      if (!values.name) errors.push('Name wajib diisi.')
+      return errors
+    },
+    mapToPayload: (values) => {
+      if (values.master_type === 'asset-category') {
+        return {
+          category_code: values.code,
+          category_name: values.name,
+          description: values.description || undefined,
+          is_active: values.is_active === 'yes',
+        }
+      }
+
+      if (values.master_type === 'asset-class') {
+        return {
+          class_code: values.code,
+          class_name: values.name,
+          is_active: values.is_active === 'yes',
+        }
+      }
+
+      if (values.master_type === 'location') {
+        return {
+          location_code: values.code,
+          location_name: values.name,
+          description: values.description || undefined,
+          is_active: values.is_active === 'yes',
+        }
+      }
+
+      return {
+        partner_code: values.code,
+        partner_name: values.name,
+        address: values.description || undefined,
+        is_active: values.is_active === 'yes',
+      }
+    },
   },
 }
 

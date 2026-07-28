@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import type { ApexOptions } from 'apexcharts'
 
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
 import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -116,14 +115,16 @@ const attentionRows = [
   { id: 6, asset: 'Scanner WH-09', issue: 'Komponen pengganti belum terpasang', priority: 'High', owner: 'Warehouse' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/assets', note: 'Sumber total asset aktif dan daftar ringkas.' },
-  { method: 'GET', path: '/api/v1/asset-transfers', note: 'Untuk transfer asset yang masih terbuka.' },
-  { method: 'GET', path: '/api/v1/stocktakes', note: 'Menampilkan sesi stocktake aktif dan pending approval.' },
-  { method: 'GET', path: '/api/v1/maintenance/requests', note: 'Maintenance request terbuka pada widget dashboard.' },
-  { method: 'GET', path: '/api/v1/maintenance/reports/backlog', note: 'Sumber backlog maintenance dan workload summary.' },
-  { method: 'GET', path: '/api/v1/reports/unverified-assets', note: 'Daftar asset yang belum diverifikasi.' },
-]
+const operationalMixOptions: ApexOptions = {
+  chart: { type: 'donut', background: 'transparent', fontFamily: 'inherit' },
+  labels: ['Healthy', 'Need Review', 'Transfer Queue', 'Maintenance'],
+  colors: ['#22c55e', '#f59e0b', '#38bdf8', '#f97316'],
+  dataLabels: { enabled: false },
+  legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+  stroke: { width: 0 },
+}
+
+const operationalMixSeries = [62, 14, 11, 13]
 </script>
 
 <template>
@@ -159,7 +160,9 @@ const endpoints: EndpointReference[] = [
         :search-keys="['asset', 'issue', 'owner']"
       />
 
-      <ApiEndpointList title="Dashboard API Map" :endpoints="endpoints" />
+      <SectionCard title="Operational Mix" description="Komposisi cepat area operasional yang paling banyak menyita perhatian.">
+        <BaseChart type="donut" :height="320" :options="operationalMixOptions" :series="operationalMixSeries" />
+      </SectionCard>
     </section>
   </div>
 </template>

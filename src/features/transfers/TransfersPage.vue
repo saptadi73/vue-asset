@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import CrudActionPanel from '@/components/CrudActionPanel.vue'
+import type { ApexOptions } from 'apexcharts'
+
+import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
-import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
+import SectionCard from '@/components/SectionCard.vue'
+import StateFlowPanel from '@/components/StateFlowPanel.vue'
+import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
   {
@@ -56,13 +59,16 @@ const rows = [
   { id: 6, number: 'TRF-2026-076', from: 'Branch East', to: 'Site C', purpose: 'Short term relocation', status: 'APPROVED' },
 ]
 
-const endpoints: EndpointReference[] = [
-  { method: 'GET', path: '/api/v1/asset-transfers', note: 'List utama transfer dan status monitoring.' },
-  { method: 'GET', path: '/api/v1/asset-transfers/{asset_transfer_id}', note: 'Detail transfer, item asset, dan histori approval sederhana.' },
-  { method: 'POST', path: '/api/v1/asset-transfers/{asset_transfer_id}/submit', note: 'Trigger perubahan status dari draft ke submitted.' },
-  { method: 'POST', path: '/api/v1/asset-transfers/{asset_transfer_id}/approve', note: 'Approval transfer sebelum completion.' },
-  { method: 'POST', path: '/api/v1/asset-transfers/{asset_transfer_id}/complete', note: 'Menyelesaikan transfer dan update histori lokasi.' },
-]
+const transferMixOptions: ApexOptions = {
+  chart: { type: 'donut', background: 'transparent', fontFamily: 'inherit' },
+  labels: ['Draft', 'Submitted', 'Approved', 'Completed'],
+  colors: ['#94a3b8', '#38bdf8', '#8b5cf6', '#22c55e'],
+  dataLabels: { enabled: false },
+  legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
+  stroke: { width: 0 },
+}
+
+const transferMixSeries = [6, 9, 5, 12]
 </script>
 
 <template>
@@ -77,19 +83,50 @@ const endpoints: EndpointReference[] = [
         description="Monitoring perpindahan asset dari draft sampai complete."
         :rows="rows"
         :columns="columns"
+        :actions="[
+          { label: 'Create New', to: '/transfers/new', icon: 'Plus', tone: 'primary' },
+        ]"
+        :row-actions="{
+          editPath: (row) => `/transfers/${row.id}/edit`,
+          deleteTitle: 'Delete Transfer',
+          resolveRowLabel: (row) => String(row.number ?? row.id),
+          deleteMessage: (row) => `Transfer ${String(row.number ?? row.id)} akan dihapus dari queue. Pastikan draft atau histori ini memang aman untuk dihapus.`,
+        }"
         search-placeholder="Cari nomor transfer, lokasi, atau purpose..."
         :search-keys="['number', 'from', 'to', 'purpose']"
       />
 
       <div class="space-y-6">
-        <CrudActionPanel
-          title="Transfer CRUD"
-          description="Kelola draft transfer dengan halaman aksi yang terpisah."
-          create-to="/transfers/new"
-          edit-to="/transfers/seed-transfer/edit"
-          delete-to="/transfers/seed-transfer/delete"
+        <StateFlowPanel
+          title="Next State Actions"
+          description="Aksi cepat untuk mendorong status transfer ke tahap berikutnya."
+          :items="[
+            {
+              label: 'Move to Submitted',
+              detail: 'Gunakan saat draft transfer siap diajukan untuk approval.',
+              to: '/transfers/seed-transfer/workflow/submit',
+              icon: 'Send',
+              tone: 'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200',
+            },
+            {
+              label: 'Move to Approved',
+              detail: 'Tandai transfer lolos verifikasi dan siap dijalankan.',
+              to: '/transfers/seed-transfer/workflow/approve',
+              icon: 'BadgeCheck',
+              tone: 'border-violet-200 bg-violet-50/70 text-violet-800 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200',
+            },
+            {
+              label: 'Move to Completed',
+              detail: 'Tutup proses transfer setelah asset diterima dan tercatat.',
+              to: '/transfers/seed-transfer/workflow/complete',
+              icon: 'PackageCheck',
+              tone: 'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200',
+            },
+          ]"
         />
-        <ApiEndpointList title="Transfer API Map" :endpoints="endpoints" />
+        <SectionCard title="Transfer Stage Mix" description="Komposisi transfer berdasarkan tahapan kerja saat ini.">
+          <BaseChart type="donut" :height="320" :options="transferMixOptions" :series="transferMixSeries" />
+        </SectionCard>
       </div>
     </section>
   </div>
