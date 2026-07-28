@@ -1,8 +1,8 @@
-import type { CrudConfig } from '@/types/crud'
+import type { CrudConfig, CrudFileValues, CrudFormValues } from '@/types/crud'
 
 import { ApiError, apiRequest } from '@/services/http'
 
-const normalizePayload = (values: Record<string, string>) =>
+const normalizePayload = (values: CrudFormValues) =>
   Object.fromEntries(
     Object.entries(values)
       .filter(([, value]) => value !== '')
@@ -16,16 +16,52 @@ const normalizePayload = (values: Record<string, string>) =>
       }),
   )
 
-export const submitCrudForm = async (config: CrudConfig, mode: 'create' | 'edit', values: Record<string, string>, id?: string) => {
-  const payload = config.mapToPayload ? config.mapToPayload(values) : normalizePayload(values)
+const getFilesForUpload = (files: CrudFileValues) =>
+  Object.entries(files).filter(([, value]) => value.length > 0)
+
+const buildAssetRegistryFormData = (
+  payload: Record<string, unknown>,
+  files: CrudFileValues,
+) => {
+  const formData = new FormData()
+  formData.append('asset_data', JSON.stringify(payload))
+
+  for (const file of files.asset_photos || []) {
+    formData.append('photo_files', file)
+  }
+
+  for (const file of files.manual_book_files || []) {
+    formData.append('manual_book_files', file)
+  }
+
+  for (const file of files.supporting_document_files || []) {
+    formData.append('supporting_document_files', file)
+  }
+
+  return formData
+}
+
+export const submitCrudForm = async (
+  config: CrudConfig,
+  mode: 'create' | 'edit',
+  values: CrudFormValues,
+  id?: string,
+  files: CrudFileValues = {},
+) => {
+  const payload = config.mapToPayload ? config.mapToPayload(values, files) : normalizePayload(values)
   const path =
     mode === 'create'
       ? config.resolveCreatePath?.(values) || config.endpoints.create.path.replace('/api/v1', '')
       : config.resolveEditPath?.(id || config.seedId, values) || config.endpoints.edit.path.replace('/api/v1', '').replace('{id}', id || config.seedId)
 
+  const body =
+    config.key === 'assets' && getFilesForUpload(files).length > 0
+      ? buildAssetRegistryFormData(payload, files)
+      : payload
+
   return apiRequest(path, {
     method: mode === 'create' ? 'POST' : 'PATCH',
-    body: payload,
+    body,
   })
 }
 

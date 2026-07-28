@@ -48,7 +48,7 @@ export const createEndpoint = (path: string, query?: ListQuery) =>
   `${apiBasePath}${path}${buildQueryString(query)}`
 
 export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
-  body?: Record<string, unknown> | string | null
+  body?: Record<string, unknown> | FormData | string | null
   withAuth?: boolean
 }
 
@@ -90,8 +90,8 @@ const redirectToLogin = () => {
 const parsePayload = async <T>(response: Response) =>
   (await response.json().catch(() => null)) as ApiEnvelope<T> | null
 
-const buildHeaders = (headers: HeadersInit | undefined, token: string) => ({
-  'Content-Type': 'application/json',
+const buildHeaders = (headers: HeadersInit | undefined, token: string, body?: ApiRequestOptions['body']) => ({
+  ...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
   ...(token ? { Authorization: `Bearer ${token}` } : {}),
   ...headers,
 })
@@ -150,8 +150,15 @@ const requestOnce = async <T>(path: string, options: ApiRequestOptions, tokenOve
 
   const response = await fetch(createEndpoint(path), {
     method,
-    headers: buildHeaders(headers, token),
-    body: body === null || body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
+    headers: buildHeaders(headers, token, body),
+    body:
+      body === null || body === undefined
+        ? undefined
+        : body instanceof FormData
+          ? body
+          : typeof body === 'string'
+            ? body
+            : JSON.stringify(body),
     ...rest,
   })
 

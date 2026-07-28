@@ -6,14 +6,19 @@ export interface CrudOption {
 export interface CrudField {
   key: string
   label: string
-  type: 'text' | 'textarea' | 'select' | 'date' | 'number'
+  type: 'text' | 'textarea' | 'select' | 'date' | 'number' | 'file'
   placeholder?: string
   helper?: string
   options?: CrudOption[]
   required?: boolean
   fullWidth?: boolean
   readOnly?: boolean
+  accept?: string
+  multiple?: boolean
 }
+
+export type CrudFormValues = Record<string, string>
+export type CrudFileValues = Record<string, File[]>
 
 export interface CrudSection {
   title: string
@@ -62,9 +67,9 @@ export interface CrudConfig {
   resolveCreatePath?: (values: Record<string, string>) => string
   resolveEditPath?: (id: string, values: Record<string, string>) => string
   resolveDeletePath?: (id: string, values?: Record<string, string>) => string
-  validate?: (values: Record<string, string>) => string[]
-  mapToPayload?: (values: Record<string, string>) => Record<string, unknown>
-  sampleValues?: Record<string, string>
+  validate?: (values: CrudFormValues, files?: CrudFileValues) => string[]
+  mapToPayload?: (values: CrudFormValues, files?: CrudFileValues) => Record<string, unknown>
+  sampleValues?: CrudFormValues
   relatedActions?: CrudHeaderAction[]
   workflowActions?: Array<{
     key: string

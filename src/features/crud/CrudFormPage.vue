@@ -30,6 +30,7 @@ const itemId = computed(() => String(route.params.id || config.value?.seedId || 
 const masterTypeFromQuery = computed(() => String(route.query.master_type || ''))
 
 const formState = reactive<Record<string, string>>({})
+const fileState = reactive<Record<string, File[]>>({})
 const validationErrors = reactive<string[]>([])
 const requestState = reactive({
   isSubmitting: false,
@@ -39,10 +40,15 @@ const requestState = reactive({
 
 const syncFormState = () => {
   const nextKeys = new Set<string>()
+  const nextFileKeys = new Set<string>()
 
   for (const section of config.value?.sections || []) {
     for (const field of section.fields) {
-      nextKeys.add(field.key)
+      if (field.type === 'file') {
+        nextFileKeys.add(field.key)
+      } else {
+        nextKeys.add(field.key)
+      }
     }
   }
 
@@ -60,10 +66,20 @@ const syncFormState = () => {
     }
   }
 
+  for (const key of Object.keys(fileState)) {
+    if (!nextFileKeys.has(key)) {
+      delete fileState[key]
+    }
+  }
+
   const initialValues = config.value?.sampleValues || {}
 
   for (const key of nextKeys) {
     formState[key] = initialValues[key] || ''
+  }
+
+  for (const key of nextFileKeys) {
+    fileState[key] = []
   }
 
   for (const key of nextKeys) {
@@ -257,7 +273,7 @@ const handleSubmit = async () => {
     return
   }
 
-  const errors = config.value.validate?.(formState) || []
+  const errors = config.value.validate?.(formState, fileState) || []
   if (errors.length) {
     validationErrors.push(...errors)
     requestState.errorMessage = 'Masih ada field yang perlu diperbaiki sebelum request dikirim.'
@@ -267,7 +283,13 @@ const handleSubmit = async () => {
   requestState.isSubmitting = true
 
   try {
-    const response = await submitCrudForm(config.value, mode.value as 'create' | 'edit', formState, itemId.value)
+    const response = await submitCrudForm(
+      config.value,
+      mode.value as 'create' | 'edit',
+      formState,
+      itemId.value,
+      fileState,
+    )
     requestState.successMessage = response.message || `${config.value.entityName} berhasil diproses.`
 
     window.setTimeout(() => {
@@ -336,10 +358,11 @@ const handleSubmit = async () => {
             <FormField
               v-for="field in section.fields"
               :key="field.key"
-              :model-value="formState[field.key] ?? ''"
+              :model-value="field.type === 'file' ? (fileState[field.key] ?? []) : (formState[field.key] ?? '')"
               @update:model-value="formState[field.key] = $event"
+              @update:files="fileState[field.key] = $event"
               :field="field"
-              :class="field.fullWidth || field.type === 'textarea' ? 'md:col-span-2' : ''"
+              :class="field.fullWidth || field.type === 'textarea' || field.type === 'file' ? 'md:col-span-2' : ''"
             />
           </div>
         </SectionCard>
