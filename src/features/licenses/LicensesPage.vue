@@ -5,7 +5,11 @@ import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
+import { getCrudConfig } from '@/config/crud'
+import { deleteCrudRecord } from '@/services/crud'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
+
+const crudConfig = getCrudConfig('licenses')!
 
 const metrics: MetricCardItem[] = [
   {
@@ -65,6 +69,10 @@ const licenseSeatOptions: ApexOptions = {
 }
 
 const licenseSeatSeries = [298, 86, 14]
+
+const handleDeleteLicense = async (row: Record<string, unknown>) => {
+  await deleteCrudRecord(crudConfig, String(row.id))
+}
 </script>
 
 <template>
@@ -87,6 +95,7 @@ const licenseSeatSeries = [298, 86, 14]
           deleteTitle: 'Delete License',
           resolveRowLabel: (row) => String(row.license_key ?? row.product ?? row.id),
           deleteMessage: (row) => `Lisensi ${String(row.product ?? row.license_key ?? row.id)} akan dihapus dari daftar. Pastikan seat dan histori renewal tidak lagi dibutuhkan.`,
+          onDelete: handleDeleteLicense,
         }"
         search-placeholder="Cari product, license key, atau status..."
         :search-keys="['product', 'license_key', 'status']"

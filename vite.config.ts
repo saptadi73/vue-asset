@@ -12,6 +12,21 @@ export default defineConfig({
     vueDevTools(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('apexcharts') || id.includes('vue3-apexcharts')) {
+            return 'charts'
+          }
+
+          if (id.includes('node_modules')) {
+            return 'vendor'
+          }
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

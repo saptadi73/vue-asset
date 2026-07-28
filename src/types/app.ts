@@ -18,12 +18,13 @@ export interface DataTableRowActions {
   deleteTitle?: string
   deleteMessage?: (row: Record<string, unknown>) => string
   resolveRowLabel?: (row: Record<string, unknown>) => string
+  onDelete?: (row: Record<string, unknown>) => Promise<void>
 }
 
 export interface MetricCardItem {
   title: string
   value: string
-  detail: string
+  detail?: string
   icon: string
   tone: string
 }

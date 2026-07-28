@@ -18,6 +18,8 @@ const props = withDefaults(
     searchPlaceholder?: string
     searchKeys?: string[]
     pageSize?: number
+    selectedRowId?: string | number | null
+    clickableRows?: boolean
   }>(),
   {
     actions: () => [],
@@ -26,17 +28,24 @@ const props = withDefaults(
     searchPlaceholder: 'Cari data...',
     searchKeys: () => [],
     pageSize: 6,
+    selectedRowId: null,
+    clickableRows: false,
   },
 )
 
 const emit = defineEmits<{
   delete: [row: Record<string, unknown>]
+  select: [row: Record<string, unknown>]
 }>()
 
 const search = ref('')
 const currentPage = ref(1)
 const localRows = ref<Record<string, unknown>[]>([...props.rows])
 const deleteCandidate = ref<Record<string, unknown> | null>(null)
+const deleteRequestState = ref({
+  isSubmitting: false,
+  errorMessage: '',
+})
 
 watch(
   () => props.rows,
@@ -103,15 +112,64 @@ const actionToneClass: Record<'primary' | 'secondary' | 'danger', string> = {
     'border-rose-200 bg-rose-50 text-rose-800 hover:border-rose-300 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200',
 }
 
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, index) => index + 1)
+  }
+
+  if (current <= 3) {
+    return [1, 2, 3, 4, total]
+  }
+
+  if (current >= total - 2) {
+    return [1, total - 3, total - 2, total - 1, total]
+  }
+
+  return [1, current - 1, current, current + 1, total]
+})
+
+const secondVisiblePage = computed(() => visiblePages.value[1] ?? null)
+const penultimateVisiblePage = computed(() => {
+  const items = visiblePages.value
+  return items.length > 1 ? items[items.length - 2] ?? null : null
+})
+const showLeadingEllipsis = computed(() => secondVisiblePage.value !== null && secondVisiblePage.value > 2)
+const showTrailingEllipsis = computed(() => {
+  return penultimateVisiblePage.value !== null && penultimateVisiblePage.value < totalPages.value - 1
+})
+const leadingEllipsisPage = computed(() => secondVisiblePage.value)
+const trailingEllipsisPage = computed(() => penultimateVisiblePage.value)
+
 const confirmDelete = () => {
   if (!deleteCandidate.value) return
+}
 
-  localRows.value = localRows.value.filter((row) => row !== deleteCandidate.value)
-  emit('delete', deleteCandidate.value)
-  deleteCandidate.value = null
+const handleDelete = async () => {
+  if (!deleteCandidate.value) return
 
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value
+  deleteRequestState.value.isSubmitting = true
+  deleteRequestState.value.errorMessage = ''
+
+  try {
+    if (props.rowActions?.onDelete) {
+      await props.rowActions.onDelete(deleteCandidate.value)
+    }
+
+    localRows.value = localRows.value.filter((row) => row !== deleteCandidate.value)
+    emit('delete', deleteCandidate.value)
+    deleteCandidate.value = null
+
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = totalPages.value
+    }
+  } catch (error) {
+    deleteRequestState.value.errorMessage =
+      error instanceof Error ? error.message : 'Terjadi kegagalan saat menghapus data di backend.'
+  } finally {
+    deleteRequestState.value.isSubmitting = false
   }
 }
 
@@ -124,6 +182,14 @@ const resolveDeleteMessage = (row: Record<string, unknown>) => {
   if (props.rowActions?.deleteMessage) return props.rowActions.deleteMessage(row)
   return `Record ${resolveDeleteLabel(row)} akan dihapus dari tampilan tabel ini.`
 }
+
+const resolveRowId = (row: Record<string, unknown>, index: number) => String(row.id ?? index)
+
+watch(deleteCandidate, (value) => {
+  if (value) {
+    deleteRequestState.value.errorMessage = ''
+  }
+})
 </script>
 
 <template>
@@ -183,7 +249,22 @@ const resolveDeleteMessage = (row: Record<string, unknown>) => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200/70 bg-white/80 dark:divide-white/8 dark:bg-slate-900/50">
-            <tr v-for="(row, index) in paginatedRows" :key="String(row.id ?? index)" class="align-top">
+            <tr
+              v-for="(row, index) in paginatedRows"
+              :key="resolveRowId(row, index)"
+              class="align-top transition"
+              :class="
+                clickableRows
+                  ? [
+                      'cursor-pointer hover:bg-sky-50/70 dark:hover:bg-slate-800/40',
+                      String(selectedRowId ?? '') === resolveRowId(row, index)
+                        ? 'bg-sky-50/80 dark:bg-sky-500/8'
+                        : '',
+                    ]
+                  : ''
+              "
+              @click="clickableRows ? emit('select', row) : undefined"
+            >
               <td
                 v-for="column in columns"
                 :key="column.key"
@@ -205,6 +286,7 @@ const resolveDeleteMessage = (row: Record<string, unknown>) => {
                     class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-800 transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200"
                     aria-label="Update row"
                     title="Update"
+                    @click.stop
                   >
                     <BaseIcon name="PencilLine" :size="16" />
                   </RouterLink>
@@ -214,7 +296,7 @@ const resolveDeleteMessage = (row: Record<string, unknown>) => {
                     class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-800 transition hover:-translate-y-0.5 hover:border-rose-300 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
                     aria-label="Delete row"
                     title="Delete"
-                    @click="deleteCandidate = row"
+                    @click.stop="deleteCandidate = row"
                   >
                     <BaseIcon name="Trash2" :size="16" />
                   </button>
@@ -231,30 +313,62 @@ const resolveDeleteMessage = (row: Record<string, unknown>) => {
       </div>
     </div>
 
-    <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div class="text-sm text-slate-500 dark:text-slate-400">
-        Pagination mengikuti kontrak backend `page` dan `page_size`.
-      </div>
-
-      <div class="flex items-center gap-2">
+    <div class="mt-4 flex justify-end">
+      <div class="flex items-center justify-end gap-2">
         <button
           type="button"
-          class="rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:text-slate-300"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-300"
           :disabled="currentPage === 1"
           @click="goToPage(currentPage - 1)"
+          aria-label="Previous page"
+          title="Previous page"
         >
-          Prev
+          <BaseIcon name="ChevronLeft" :size="16" />
         </button>
-        <span class="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-          {{ currentPage }} / {{ totalPages }}
-        </span>
+
+        <div class="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-50/90 px-2 py-1 shadow-[0_14px_30px_-20px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-slate-900/80">
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            type="button"
+            class="inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-sm font-semibold transition"
+            :class="
+              page === currentPage
+                ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/15 dark:bg-sky-500 dark:text-white dark:shadow-sky-950/30'
+                : 'text-slate-500 hover:bg-white hover:text-sky-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-sky-200'
+            "
+            @click="goToPage(page)"
+          >
+            <template v-if="page === visiblePages[0]">
+              {{ page }}
+            </template>
+            <template v-else-if="showLeadingEllipsis && page === leadingEllipsisPage">
+              <span class="inline-flex items-center gap-1">
+                <span class="text-slate-400">...</span>
+                <span>{{ page }}</span>
+              </span>
+            </template>
+            <template v-else-if="showTrailingEllipsis && page === trailingEllipsisPage">
+              <span class="inline-flex items-center gap-1">
+                <span>{{ page }}</span>
+                <span class="text-slate-400">...</span>
+              </span>
+            </template>
+            <template v-else>
+              {{ page }}
+            </template>
+          </button>
+        </div>
+
         <button
           type="button"
-          class="rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:text-slate-300"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-sky-400 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-300"
           :disabled="currentPage === totalPages"
           @click="goToPage(currentPage + 1)"
+          aria-label="Next page"
+          title="Next page"
         >
-          Next
+          <BaseIcon name="ChevronRight" :size="16" />
         </button>
       </div>
     </div>
@@ -285,19 +399,25 @@ const resolveDeleteMessage = (row: Record<string, unknown>) => {
           <button
             type="button"
             class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-400 hover:text-sky-700 dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-200"
+            :disabled="deleteRequestState.isSubmitting"
             @click="deleteCandidate = null"
           >
             Cancel
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-rose-950/20 transition hover:bg-rose-500"
-            @click="confirmDelete"
+            class="inline-flex items-center gap-2 rounded-full bg-rose-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-rose-950/20 transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="deleteRequestState.isSubmitting"
+            @click="handleDelete"
           >
-            <BaseIcon name="Trash2" :size="15" />
-            Yes, Delete
+            <BaseIcon :name="deleteRequestState.isSubmitting ? 'LoaderCircle' : 'Trash2'" :size="15" :class="deleteRequestState.isSubmitting ? 'animate-spin' : ''" />
+            {{ deleteRequestState.isSubmitting ? 'Deleting...' : 'Yes, Delete' }}
           </button>
         </div>
+
+        <p v-if="deleteRequestState.errorMessage" class="mt-4 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm leading-6 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200">
+          {{ deleteRequestState.errorMessage }}
+        </p>
       </div>
     </div>
   </SectionCard>

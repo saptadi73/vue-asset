@@ -1,17 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import AssetRegistryPage from '@/features/assets/AssetRegistryPage.vue'
-import CrudDeletePage from '@/features/crud/CrudDeletePage.vue'
-import CrudFormPage from '@/features/crud/CrudFormPage.vue'
-import WorkflowActionPage from '@/features/crud/WorkflowActionPage.vue'
-import DashboardPage from '@/features/dashboard/DashboardPage.vue'
-import LeasesPage from '@/features/leases/LeasesPage.vue'
-import LicensesPage from '@/features/licenses/LicensesPage.vue'
-import MaintenancePage from '@/features/maintenance/MaintenancePage.vue'
-import MasterDataPage from '@/features/master-data/MasterDataPage.vue'
-import ReportsPage from '@/features/reports/ReportsPage.vue'
-import TrackingPage from '@/features/tracking/TrackingPage.vue'
-import TransfersPage from '@/features/transfers/TransfersPage.vue'
+const DashboardPage = () => import('@/features/dashboard/DashboardPage.vue')
+const AssetRegistryPage = () => import('@/features/assets/AssetRegistryPage.vue')
+const CrudDeletePage = () => import('@/features/crud/CrudDeletePage.vue')
+const CrudFormPage = () => import('@/features/crud/CrudFormPage.vue')
+const WorkflowActionPage = () => import('@/features/crud/WorkflowActionPage.vue')
+const TransfersPage = () => import('@/features/transfers/TransfersPage.vue')
+const LeasesPage = () => import('@/features/leases/LeasesPage.vue')
+const LicensesPage = () => import('@/features/licenses/LicensesPage.vue')
+const TrackingPage = () => import('@/features/tracking/TrackingPage.vue')
+const MaintenancePage = () => import('@/features/maintenance/MaintenancePage.vue')
+const ReportsPage = () => import('@/features/reports/ReportsPage.vue')
+const MasterDataPage = () => import('@/features/master-data/MasterDataPage.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

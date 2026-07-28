@@ -17,11 +17,6 @@ const expandedGroups = ref<Record<string, boolean>>(
 )
 
 const pageTitle = computed(() => String(route.meta.title || 'Dashboard'))
-const pageDescription = computed(() =>
-  String(route.meta.description || 'Asset operations workspace aligned with backend implementation docs.'),
-)
-const activeGroupCount = computed(() => navigationGroups.length)
-const activeMenuCount = computed(() => navigationGroups.reduce((total, group) => total + group.items.length, 0))
 const currentSectionLabel = computed(() => {
   const group = navigationGroups.find((item) => item.items.some((entry) => entry.to === route.path))
   return group?.label || 'Workspace'
@@ -105,20 +100,6 @@ onMounted(() => {
               </div>
             </div>
 
-            <div v-if="!isDesktopSidebarCollapsed" class="mt-4 grid grid-cols-2 gap-3">
-              <div class="rounded-2xl border border-white/50 bg-white/65 p-3 dark:border-white/10 dark:bg-slate-900/55">
-                <p class="text-[11px] font-semibold tracking-[0.2em] text-slate-500 uppercase dark:text-slate-400">
-                  Groups
-                </p>
-                <p class="mt-2 text-2xl font-semibold">{{ activeGroupCount }}</p>
-              </div>
-              <div class="rounded-2xl border border-white/50 bg-white/65 p-3 dark:border-white/10 dark:bg-slate-900/55">
-                <p class="text-[11px] font-semibold tracking-[0.2em] text-slate-500 uppercase dark:text-slate-400">
-                  Menus
-                </p>
-                <p class="mt-2 text-2xl font-semibold">{{ activeMenuCount }}</p>
-              </div>
-            </div>
           </div>
 
           <div class="mb-4 flex items-center justify-between gap-3">
@@ -126,13 +107,7 @@ onMounted(() => {
               <p class="text-xs font-semibold tracking-[0.26em] text-slate-400 uppercase dark:text-slate-500">
                 Navigation
               </p>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Foldable menu groups by feature area</p>
-            </div>
-            <div
-              class="rounded-full border border-slate-200/80 bg-white/70 px-3 py-1 text-xs text-slate-600 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-300"
-              :class="isDesktopSidebarCollapsed ? 'mx-auto' : ''"
-            >
-              {{ currentSectionLabel }}
+              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Grouped feature menus</p>
             </div>
           </div>
 
@@ -290,10 +265,6 @@ onMounted(() => {
                 <span class="rounded-full bg-slate-100 px-2 py-1 text-[11px] dark:bg-slate-800">/</span>
               </div>
               <ThemeToggle :is-dark="isDark" @toggle="toggleTheme" />
-              <div class="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-3 py-2 text-sm text-slate-600 md:flex dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-300">
-                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                Docs-driven frontend
-              </div>
               <div class="hidden rounded-full border border-slate-200 bg-white/85 p-1 md:flex dark:border-white/10 dark:bg-slate-900/70">
                 <div class="flex items-center gap-3 rounded-full px-2 py-1">
                   <div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950">
@@ -308,26 +279,6 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="mt-4 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <p class="max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              {{ pageDescription }}
-            </p>
-
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:w-[420px]">
-              <div class="rounded-2xl border border-slate-200/80 bg-white/72 px-4 py-3 dark:border-white/10 dark:bg-slate-900/58">
-                <p class="text-[11px] font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Sync</p>
-                <p class="mt-1 text-sm font-semibold">09:24</p>
-              </div>
-              <div class="rounded-2xl border border-slate-200/80 bg-white/72 px-4 py-3 dark:border-white/10 dark:bg-slate-900/58">
-                <p class="text-[11px] font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Theme</p>
-                <p class="mt-1 text-sm font-semibold">{{ isDark ? 'Dark' : 'Light' }}</p>
-              </div>
-              <div class="rounded-2xl border border-slate-200/80 bg-white/72 px-4 py-3 dark:border-white/10 dark:bg-slate-900/58">
-                <p class="text-[11px] font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Scope</p>
-                <p class="mt-1 text-sm font-semibold">{{ activeMenuCount }} menus</p>
-              </div>
-            </div>
-          </div>
         </header>
 
         <main class="flex-1 px-4 py-6 md:px-6 lg:px-8">
@@ -383,16 +334,6 @@ onMounted(() => {
           </button>
           </div>
 
-          <div class="mt-4 grid grid-cols-2 gap-3">
-            <div class="rounded-2xl border border-white/50 bg-white/65 p-3 dark:border-white/10 dark:bg-slate-900/55">
-              <p class="text-[11px] font-semibold tracking-[0.2em] text-slate-500 uppercase dark:text-slate-400">Groups</p>
-              <p class="mt-1 text-lg font-semibold">{{ activeGroupCount }}</p>
-            </div>
-            <div class="rounded-2xl border border-white/50 bg-white/65 p-3 dark:border-white/10 dark:bg-slate-900/55">
-              <p class="text-[11px] font-semibold tracking-[0.2em] text-slate-500 uppercase dark:text-slate-400">Menus</p>
-              <p class="mt-1 text-lg font-semibold">{{ activeMenuCount }}</p>
-            </div>
-          </div>
         </div>
 
         <nav class="space-y-3 overflow-y-auto">

@@ -13,7 +13,7 @@ defineProps<{
     <div class="flex items-start justify-between gap-4">
       <div>
         <p class="text-sm text-slate-500 dark:text-slate-400">{{ item.title }}</p>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+        <p class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
           {{ item.value }}
         </p>
       </div>
@@ -22,7 +22,5 @@ defineProps<{
         <BaseIcon :name="item.icon" :size="20" />
       </div>
     </div>
-
-    <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">{{ item.detail }}</p>
   </article>
 </template>

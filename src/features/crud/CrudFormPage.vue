@@ -4,10 +4,19 @@ import { useRoute, useRouter } from 'vue-router'
 
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
 import ApiSessionPanel from '@/components/ApiSessionPanel.vue'
+import BaseIcon from '@/components/BaseIcon.vue'
 import CrudPageShell from '@/components/CrudPageShell.vue'
 import FormField from '@/components/FormField.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
+import {
+  assetCategoryRecords,
+  assetClassRecords,
+  leaseContractRecords,
+  locationRecords,
+  maintenanceContractRecords,
+  vendorRecords,
+} from '@/data/master-data'
 import { submitCrudForm } from '@/services/crud'
 import { ApiError } from '@/services/http'
 
@@ -17,6 +26,7 @@ const crudKey = computed(() => String(route.meta.crudKey || ''))
 const mode = computed(() => String(route.meta.crudMode || 'create'))
 const config = computed(() => getCrudConfig(crudKey.value))
 const itemId = computed(() => String(route.params.id || config.value?.seedId || 'sample-record'))
+const masterTypeFromQuery = computed(() => String(route.query.master_type || ''))
 
 const formState = reactive<Record<string, string>>({})
 const validationErrors = reactive<string[]>([])
@@ -47,24 +57,96 @@ const syncFormState = () => {
     formState[key] = initialValues[key] || ''
   }
 
+  if (masterTypeFromQuery.value && 'master_type' in formState) {
+    formState.master_type = masterTypeFromQuery.value
+  }
+
   if (mode.value === 'edit' && itemId.value) {
     const editSeed = itemId.value.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
 
     if ('asset_name' in formState) formState.asset_name = `Sample ${editSeed}`
     if ('name' in formState) formState.name = `Sample ${editSeed}`
+    if ('last_maintenance' in formState && !formState.last_maintenance) formState.last_maintenance = '2026-07-18'
+    if ('predictive_warning' in formState && !formState.predictive_warning) {
+      formState.predictive_warning = 'Vibration pattern indicates preventive inspection is recommended.'
+    }
     if ('notes' in formState && !formState.notes) formState.notes = `Updated context for ${editSeed}.`
   }
 }
 
-watch([config, mode, itemId], syncFormState, { immediate: true })
+watch([config, mode, itemId, masterTypeFromQuery], syncFormState, { immediate: true })
 
 const pageTitle = computed(() => (mode.value === 'edit' ? config.value?.editTitle : config.value?.createTitle) || 'Form')
 const pageDescription = computed(() => (mode.value === 'edit' ? config.value?.editDescription : config.value?.createDescription) || '')
 const submitLabel = computed(() => (mode.value === 'edit' ? 'Save Changes' : 'Create Record'))
+const isAssetForm = computed(() => crudKey.value === 'assets')
+const isMasterDataForm = computed(() => crudKey.value === 'masterData')
 
 const endpoints = computed(() => {
   if (!config.value) return []
   return [mode.value === 'edit' ? config.value.endpoints.edit : config.value.endpoints.create]
+})
+
+const selectedCategory = computed(() =>
+  assetCategoryRecords.find((item) => item.id === formState.category),
+)
+const selectedClass = computed(() =>
+  assetClassRecords.find((item) => item.id === formState.asset_class),
+)
+const selectedLocation = computed(() =>
+  locationRecords.find((item) => item.id === formState.location),
+)
+const selectedVendor = computed(() =>
+  vendorRecords.find((item) => item.id === formState.vendor_partner),
+)
+const selectedLease = computed(() =>
+  leaseContractRecords.find((item) => item.id === formState.lease_contract),
+)
+const selectedMaintenanceContract = computed(() =>
+  maintenanceContractRecords.find((item) => item.id === formState.maintenance_contract),
+)
+const assetWarnings = computed(() => {
+  const items: Array<{ tone: string; icon: string; title: string; detail: string }> = []
+
+  if (formState.predictive_warning) {
+    items.push({
+      tone: 'border-amber-200 bg-amber-50/80 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100',
+      icon: 'TriangleAlert',
+      title: 'Predictive Warning',
+      detail: formState.predictive_warning,
+    })
+  }
+
+  if (formState.contract_expiry) {
+    const expiry = new Date(formState.contract_expiry)
+    const now = new Date('2026-07-28')
+    const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays <= 30) {
+      items.push({
+        tone: 'border-rose-200 bg-rose-50/80 text-rose-900 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100',
+        icon: 'ShieldAlert',
+        title: 'Contract Expiry Warning',
+        detail: `Kontrak terkait asset ini akan berakhir dalam ${diffDays} hari.`,
+      })
+    }
+  }
+
+  return items
+})
+const masterTypeLabel = computed(() => {
+  switch (formState.master_type) {
+    case 'asset-category':
+      return 'Asset Category'
+    case 'asset-class':
+      return 'Asset Class'
+    case 'location':
+      return 'Location'
+    case 'business-partner':
+      return 'Vendor / Business Partner'
+    default:
+      return 'Master Record'
+  }
 })
 
 const handleSubmit = async () => {
@@ -155,6 +237,60 @@ const handleSubmit = async () => {
 
       <div class="space-y-6">
         <ApiEndpointList title="Form Endpoint" :endpoints="endpoints" />
+
+        <SectionCard v-if="isAssetForm" title="Asset Relation Summary">
+          <div class="space-y-4">
+            <div class="grid gap-3">
+              <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+                <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Classification</p>
+                <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                  <p><span class="font-medium">Category:</span> {{ selectedCategory?.name || 'Belum dipilih' }}</p>
+                  <p><span class="font-medium">Class:</span> {{ selectedClass?.name || 'Belum dipilih' }}</p>
+                  <p><span class="font-medium">Location:</span> {{ selectedLocation?.name || 'Belum dipilih' }}</p>
+                </div>
+              </div>
+
+              <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+                <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Vendor & Contracts</p>
+                <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                  <p><span class="font-medium">Vendor:</span> {{ selectedVendor?.name || 'Belum dipilih' }}</p>
+                  <p><span class="font-medium">Lease:</span> {{ selectedLease?.number || 'Tidak terhubung' }}</p>
+                  <p><span class="font-medium">Maintenance:</span> {{ selectedMaintenanceContract?.number || 'Tidak terhubung' }}</p>
+                  <p><span class="font-medium">Last Maintenance:</span> {{ formState.last_maintenance || 'Belum ada histori' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="assetWarnings.length" class="space-y-3">
+              <div
+                v-for="warning in assetWarnings"
+                :key="warning.title"
+                class="rounded-[22px] border p-4"
+                :class="warning.tone"
+              >
+                <div class="flex items-start gap-3">
+                  <div class="rounded-2xl bg-white/80 p-2 ring-1 ring-white/60 dark:bg-slate-950/40 dark:ring-white/10">
+                    <BaseIcon :name="warning.icon" :size="16" />
+                  </div>
+                  <div>
+                    <p class="text-sm font-semibold">{{ warning.title }}</p>
+                    <p class="mt-1 text-sm leading-6 opacity-90">{{ warning.detail }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard v-if="isMasterDataForm" title="Domain Context">
+          <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm leading-6 text-slate-700 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200">
+            <p><span class="font-medium">Master Domain:</span> {{ masterTypeLabel }}</p>
+            <p class="mt-2 text-slate-500 dark:text-slate-400">
+              Record ini akan menjadi sumber dropdown, validasi relasi, dan referensi transaksi di modul asset management.
+            </p>
+          </div>
+        </SectionCard>
+
         <ApiSessionPanel />
         <SectionCard title="Frontend Note" description="Halaman ini sudah siap untuk dihubungkan ke service API nyata.">
           <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">

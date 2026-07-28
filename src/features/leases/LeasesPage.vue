@@ -5,7 +5,11 @@ import BaseChart from '@/components/BaseChart.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
+import { getCrudConfig } from '@/config/crud'
+import { deleteCrudRecord } from '@/services/crud'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
+
+const crudConfig = getCrudConfig('leases')!
 
 const metrics: MetricCardItem[] = [
   {
@@ -69,6 +73,10 @@ const leaseExposureOptions: ApexOptions = {
 }
 
 const leaseExposureSeries = [{ name: 'Spend (jt)', data: [182, 176, 171, 168, 165, 160] }]
+
+const handleDeleteLease = async (row: Record<string, unknown>) => {
+  await deleteCrudRecord(crudConfig, String(row.id))
+}
 </script>
 
 <template>
@@ -91,6 +99,7 @@ const leaseExposureSeries = [{ name: 'Spend (jt)', data: [182, 176, 171, 168, 16
           deleteTitle: 'Delete Lease Contract',
           resolveRowLabel: (row) => String(row.contract ?? row.id),
           deleteMessage: (row) => `Kontrak ${String(row.contract ?? row.id)} akan dihapus dari daftar lease. Pastikan dampak ke vendor dan histori payment sudah dicek.`,
+          onDelete: handleDeleteLease,
         }"
         search-placeholder="Cari kontrak, vendor, atau periode..."
         :search-keys="['contract', 'vendor', 'period']"

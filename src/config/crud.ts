@@ -1,9 +1,28 @@
 import type { CrudConfig } from '@/types/crud'
+import {
+  assetCategoryRecords,
+  assetClassRecords,
+  leaseContractRecords,
+  locationRecords,
+  maintenanceContractRecords,
+  toCrudOptions,
+  vendorRecords,
+} from '@/data/master-data'
 
 const yesNoOptions = [
   { label: 'Yes', value: 'yes' },
   { label: 'No', value: 'no' },
 ]
+
+const assetCategoryOptions = toCrudOptions(assetCategoryRecords, (item) => `${item.code} - ${item.name}`)
+const assetClassOptions = toCrudOptions(assetClassRecords, (item) => `${item.code} - ${item.name}`)
+const locationOptions = toCrudOptions(locationRecords, (item) => `${item.code} - ${item.name}`)
+const vendorOptions = toCrudOptions(vendorRecords, (item) => `${item.code} - ${item.name}`)
+const leaseOptions = leaseContractRecords.map((item) => ({ label: `${item.number} - ${item.vendorName}`, value: item.id }))
+const maintenanceContractOptions = maintenanceContractRecords.map((item) => ({
+  label: `${item.number} - ${item.vendorName}`,
+  value: item.id,
+}))
 
 export const crudConfigs: Record<string, CrudConfig> = {
   assets: {
@@ -30,11 +49,17 @@ export const crudConfigs: Record<string, CrudConfig> = {
     sampleValues: {
       asset_code: 'AST-2026-001',
       asset_name: 'Dell Latitude 7440',
-      category: 'laptop',
-      asset_class: 'it-4y',
-      location: 'hq-wh',
+      category: 'cat-laptop',
+      asset_class: 'class-it-4y',
+      location: 'loc-hq-wh',
       status: 'ACTIVE',
       custodian: 'IT Operations',
+      vendor_partner: 'partner-dell',
+      maintenance_contract: 'mc-001',
+      lease_contract: 'lease-001',
+      contract_expiry: '2026-12-31',
+      last_maintenance: '2026-07-18',
+      predictive_warning: 'Battery health trend below threshold',
       purchase_date: '2026-07-10',
       purchase_cost: '25000000',
       replacement_priority: 'medium',
@@ -54,9 +79,13 @@ export const crudConfigs: Record<string, CrudConfig> = {
       asset_category_id: values.category,
       asset_class_id: values.asset_class,
       current_location_id: values.location || undefined,
+      vendor_partner_id: values.vendor_partner || undefined,
+      lease_contract_id: values.lease_contract || undefined,
+      maintenance_contract_id: values.maintenance_contract || undefined,
       status: values.status || undefined,
       purchase_date: values.purchase_date || undefined,
       purchase_cost: values.purchase_cost ? Number(values.purchase_cost) : undefined,
+      vendor_contract_expiry_date: values.contract_expiry || undefined,
       replacement_priority: values.replacement_priority || undefined,
     }),
     sections: [
@@ -66,18 +95,30 @@ export const crudConfigs: Record<string, CrudConfig> = {
         fields: [
           { key: 'asset_code', label: 'Asset Code', type: 'text', placeholder: 'AST-2026-001', required: true },
           { key: 'asset_name', label: 'Asset Name', type: 'text', placeholder: 'Dell Latitude 7440', required: true },
-          { key: 'category', label: 'Category', type: 'select', required: true, options: [{ label: 'Laptop', value: 'laptop' }, { label: 'Vehicle', value: 'vehicle' }, { label: 'Printer', value: 'printer' }] },
-          { key: 'asset_class', label: 'Asset Class', type: 'select', required: true, options: [{ label: 'IT-4Y', value: 'it-4y' }, { label: 'VEH-8Y', value: 'veh-8y' }, { label: 'OFF-5Y', value: 'off-5y' }] },
+          { key: 'category', label: 'Category', type: 'select', required: true, options: assetCategoryOptions },
+          { key: 'asset_class', label: 'Asset Class', type: 'select', required: true, options: assetClassOptions },
         ],
       },
       {
         title: 'Operational Context',
         description: 'Lokasi, status, dan ownership awal asset.',
         fields: [
-          { key: 'location', label: 'Current Location', type: 'select', options: [{ label: 'HQ Warehouse', value: 'hq-wh' }, { label: 'Site A', value: 'site-a' }, { label: 'Finance Office', value: 'finance-office' }] },
+          { key: 'location', label: 'Current Location', type: 'select', options: locationOptions },
           { key: 'status', label: 'Status', type: 'select', options: [{ label: 'ACTIVE', value: 'ACTIVE' }, { label: 'MAINTENANCE', value: 'MAINTENANCE' }, { label: 'RETIRED', value: 'RETIRED' }] },
           { key: 'custodian', label: 'Custodian / PIC', type: 'text', placeholder: 'IT Operations' },
           { key: 'purchase_date', label: 'Purchase Date', type: 'date' },
+        ],
+      },
+      {
+        title: 'Vendor and Coverage',
+        description: 'Relasi asset ke vendor, contract, dan sinyal maintenance.',
+        fields: [
+          { key: 'vendor_partner', label: 'Vendor / Service Partner', type: 'select', options: vendorOptions, helper: 'Ambil dari master business partner agar relasi data konsisten.' },
+          { key: 'lease_contract', label: 'Lease Contract', type: 'select', options: leaseOptions },
+          { key: 'maintenance_contract', label: 'Maintenance Contract', type: 'select', options: maintenanceContractOptions },
+          { key: 'contract_expiry', label: 'Contract Expiry', type: 'date' },
+          { key: 'last_maintenance', label: 'Last Maintenance', type: 'date', helper: 'Terakhir sinkron dari histori maintenance asset.' },
+          { key: 'predictive_warning', label: 'Predictive Warning', type: 'text', fullWidth: true, placeholder: 'Battery health trend below threshold' },
         ],
       },
       {
@@ -346,18 +387,66 @@ export const crudConfigs: Record<string, CrudConfig> = {
       session_name: 'STK-HQ-AUG',
       start_date: '2026-08-01',
       end_date: '2026-08-05',
-      location: 'hq-wh',
+      location: 'loc-hq-wh',
       approver: 'Finance Controller',
       notes: 'Target coverage minimal 95 persen.',
     },
     validate: (values) => {
       const errors: string[] = []
       if (!values.session_name) errors.push('Session Name wajib diisi.')
+      if (!values.location) errors.push('Location wajib dipilih.')
       if (values.start_date && values.end_date && values.end_date < values.start_date) {
         errors.push('End Date tidak boleh lebih awal dari Start Date.')
       }
       return errors
     },
+    mapToPayload: (values) => ({
+      session_number: values.session_name,
+      location_id: values.location,
+      scope_type: 'LOCATION',
+      planned_start_at: values.start_date ? `${values.start_date}T00:00:00Z` : undefined,
+      planned_end_at: values.end_date ? `${values.end_date}T23:59:59Z` : undefined,
+      notes: values.notes || undefined,
+      approver_name: values.approver || undefined,
+    }),
+    workflowActions: [
+      {
+        key: 'start',
+        label: 'Move to In Progress',
+        description: 'Mulai sesi stocktake dan bentuk snapshot expected asset dari lokasi target.',
+        icon: 'Play',
+        tone: 'border-sky-200 bg-sky-50/70 text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200',
+        method: 'POST',
+        resolvePath: (id) => `/stocktakes/${id}/start`,
+        noteFieldLabel: 'Start Note',
+        noteFieldPlaceholder: 'Tambahkan catatan saat sesi stocktake dimulai.',
+        nextState: 'IN_PROGRESS',
+      },
+      {
+        key: 'complete',
+        label: 'Move to Completed',
+        description: 'Tutup sesi stocktake dan bentuk hasil missing untuk item yang belum ditemukan.',
+        icon: 'ClipboardCheck',
+        tone: 'border-amber-200 bg-amber-50/70 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200',
+        method: 'POST',
+        resolvePath: (id) => `/stocktakes/${id}/complete`,
+        noteFieldLabel: 'Completion Note',
+        noteFieldPlaceholder: 'Tambahkan ringkasan hasil stocktake sebelum ditutup.',
+        nextState: 'COMPLETED',
+      },
+      {
+        key: 'approve',
+        label: 'Move to Approved',
+        description: 'Setujui hasil stocktake agar discrepancy bisa ditindaklanjuti secara formal.',
+        icon: 'BadgeCheck',
+        tone: 'border-emerald-200 bg-emerald-50/70 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200',
+        method: 'POST',
+        resolvePath: (id) => `/stocktakes/${id}/approve`,
+        noteFieldLabel: 'Approval Note',
+        noteFieldPlaceholder: 'Tambahkan catatan approval jika diperlukan.',
+        nextState: 'APPROVED',
+      },
+    ],
     sections: [
       {
         title: 'Session Setup',
@@ -372,7 +461,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
         title: 'Coverage and Approval',
         description: 'Lokasi target dan approval flow.',
         fields: [
-          { key: 'location', label: 'Location', type: 'select', options: [{ label: 'HQ Warehouse', value: 'hq-wh' }, { label: 'Site A', value: 'site-a' }, { label: 'Branch West', value: 'branch-west' }] },
+          { key: 'location', label: 'Location', type: 'select', required: true, options: locationOptions },
           { key: 'approver', label: 'Approver', type: 'text', placeholder: 'Finance Controller' },
           { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Cantumkan target coverage dan aturan pengecualian.' },
         ],
