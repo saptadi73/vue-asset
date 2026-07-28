@@ -3,7 +3,6 @@ import { computed, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import ApiSessionPanel from '@/components/ApiSessionPanel.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import CrudPageShell from '@/components/CrudPageShell.vue'
 import SectionCard from '@/components/SectionCard.vue'
@@ -140,13 +139,6 @@ const handleSubmit = async () => {
 
       <div class="space-y-6">
         <ApiEndpointList title="Workflow Endpoint" :endpoints="endpoints" />
-        <ApiSessionPanel />
-        <SectionCard title="Frontend Note" description="Workflow action dipisahkan dari form edit agar state change lebih aman dan jelas.">
-          <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            <p>Tombol next state sekarang bisa diarahkan ke halaman command khusus, bukan bercampur di form edit umum.</p>
-            <p>Pola ini memudahkan kita menambah approval note, confirmation guard, dan role-based action di tahap berikutnya.</p>
-          </div>
-        </SectionCard>
       </div>
     </div>
   </CrudPageShell>

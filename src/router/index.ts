@@ -11,6 +11,14 @@ const LicensesPage = () => import('@/features/licenses/LicensesPage.vue')
 const TrackingPage = () => import('@/features/tracking/TrackingPage.vue')
 const MaintenancePage = () => import('@/features/maintenance/MaintenancePage.vue')
 const ReportsPage = () => import('@/features/reports/ReportsPage.vue')
+const MaintenanceCostReportPage = () => import('@/features/reports/MaintenanceCostReportPage.vue')
+const MaintenanceSlaReportPage = () => import('@/features/reports/MaintenanceSlaReportPage.vue')
+const FailureAnalysisReportPage = () => import('@/features/reports/FailureAnalysisReportPage.vue')
+const EntitlementExpiryReportPage = () => import('@/features/reports/EntitlementExpiryReportPage.vue')
+const ScheduleStabilityReportPage = () => import('@/features/reports/ScheduleStabilityReportPage.vue')
+const AssetLifecycleRiskReportPage = () => import('@/features/reports/AssetLifecycleRiskReportPage.vue')
+const MaintenanceMixReportPage = () => import('@/features/reports/MaintenanceMixReportPage.vue')
+const TrackingVerificationDashboardPage = () => import('@/features/reports/TrackingVerificationDashboardPage.vue')
 const MasterDataPage = () => import('@/features/master-data/MasterDataPage.vue')
 
 const router = createRouter({
@@ -265,6 +273,70 @@ const router = createRouter({
       meta: {
         title: 'Reports',
         description: 'Halaman report exception dan insight yang diarahkan untuk kebutuhan keputusan cepat, bukan sekadar tabel statis.',
+      },
+    },
+    {
+      path: '/reports/maintenance-cost',
+      component: MaintenanceCostReportPage,
+      meta: {
+        title: 'Maintenance Cost Report',
+        description: 'Ringkasan cost maintenance dengan split part, labor, vendor, dan top work order mahal.',
+      },
+    },
+    {
+      path: '/reports/maintenance-sla',
+      component: MaintenanceSlaReportPage,
+      meta: {
+        title: 'Maintenance SLA Report',
+        description: 'Compliance response dan resolution SLA berikut breach summary yang perlu audit.',
+      },
+    },
+    {
+      path: '/reports/failure-analysis',
+      component: FailureAnalysisReportPage,
+      meta: {
+        title: 'Failure Analysis Report',
+        description: 'Analisis failure mode, root cause, repeat failure, dan top failed assets.',
+      },
+    },
+    {
+      path: '/reports/entitlement-expiry',
+      component: EntitlementExpiryReportPage,
+      meta: {
+        title: 'Entitlement Expiry Dashboard',
+        description: 'Watchlist warranty, contract, dan support entitlement yang mendekati akhir.',
+      },
+    },
+    {
+      path: '/reports/schedule-stability',
+      component: ScheduleStabilityReportPage,
+      meta: {
+        title: 'Schedule Stability Report',
+        description: 'Audit reschedule, postponed schedules, dan source trigger yang paling tidak stabil.',
+      },
+    },
+    {
+      path: '/reports/asset-lifecycle-risk',
+      component: AssetLifecycleRiskReportPage,
+      meta: {
+        title: 'Asset Lifecycle Risk Report',
+        description: 'Risk attention list, replacement recommendation, dan support end watchlist.',
+      },
+    },
+    {
+      path: '/reports/maintenance-mix',
+      component: MaintenanceMixReportPage,
+      meta: {
+        title: 'Maintenance Mix Dashboard',
+        description: 'Perbandingan preventive, corrective, breakdown, predictive, dan execution mode mix.',
+      },
+    },
+    {
+      path: '/reports/tracking-verification',
+      component: TrackingVerificationDashboardPage,
+      meta: {
+        title: 'Tracking Verification Dashboard',
+        description: 'Verification KPI, discrepancy table, missing assets, dan verification aging.',
       },
     },
     {

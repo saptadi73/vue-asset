@@ -21,10 +21,30 @@ export interface CrudSection {
   fields: CrudField[]
 }
 
+export interface CrudHeaderAction {
+  label: string
+  icon: string
+  tone?: 'primary' | 'secondary'
+  onlyModes?: Array<'create' | 'edit'>
+  resolveTo: (context: {
+    mode: 'create' | 'edit'
+    itemId: string
+    values: Record<string, string>
+  }) => string
+}
+
+export interface CrudParentContextItem {
+  queryKey: string
+  label: string
+}
+
 export interface CrudConfig {
   key: string
   title: string
   entityName: string
+  formRole?: 'main' | 'sub'
+  parentContext?: CrudParentContextItem[]
+  requiredParentContextKeys?: string[]
   basePath: string
   createTitle: string
   editTitle: string
@@ -45,6 +65,7 @@ export interface CrudConfig {
   validate?: (values: Record<string, string>) => string[]
   mapToPayload?: (values: Record<string, string>) => Record<string, unknown>
   sampleValues?: Record<string, string>
+  relatedActions?: CrudHeaderAction[]
   workflowActions?: Array<{
     key: string
     label: string

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ApexOptions } from 'apexcharts'
 import { computed, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
@@ -9,6 +10,7 @@ import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
+import { liveSeedIds } from '@/data/liveSeedIds'
 import { deleteCrudRecord } from '@/services/crud'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 import { formatEnumLabel } from '@/utils/formatters'
@@ -210,6 +212,44 @@ const summaryRows = computed(() => [
   { label: 'Owner', value: selectedLease.value.owner, note: 'PIC internal pemilik kontrak dan reviewer utama.' },
   { label: 'Renewal Window', value: selectedLease.value.renewal_window, note: 'Panduan review sebelum renewal atau closeout.' },
   { label: 'Payment Cycle', value: selectedLease.value.payment_cycle, note: 'Frekuensi tagihan dan kontrol payment schedule.' },
+])
+const leaseRelatedActions = computed(() => [
+  {
+    label: 'Update Lease',
+    to: `/leases/${selectedLease.value.id}/edit`,
+    icon: 'PencilLine',
+    tone: 'primary',
+  },
+  {
+    label: 'Request Maintenance',
+    to: `/maintenance/new?lease_contract_id=${encodeURIComponent(selectedLease.value.contract)}&lease_contract_number=${encodeURIComponent(selectedLease.value.contract)}&asset_name=${encodeURIComponent(selectedLease.value.scope_note)}&notes=${encodeURIComponent(`Maintenance follow-up for lease ${selectedLease.value.contract}`)}`,
+    icon: 'Wrench',
+    tone: 'secondary',
+  },
+  {
+    label: 'Update Maintenance',
+    to: `/maintenance/${liveSeedIds.maintenance_request_id}/edit?lease_contract_id=${encodeURIComponent(selectedLease.value.contract)}&lease_contract_number=${encodeURIComponent(selectedLease.value.contract)}&asset_name=${encodeURIComponent(selectedLease.value.scope_note)}`,
+    icon: 'PencilRuler',
+    tone: 'secondary',
+  },
+  {
+    label: 'Create Transfer',
+    to: `/transfers/new?notes=${encodeURIComponent(`Transfer coordination for lease ${selectedLease.value.contract}`)}`,
+    icon: 'ArrowRightLeft',
+    tone: 'secondary',
+  },
+  {
+    label: 'Update Transfer',
+    to: `/transfers/${liveSeedIds.asset_transfer_id}/edit?notes=${encodeURIComponent(`Transfer coordination for lease ${selectedLease.value.contract}`)}`,
+    icon: 'Route',
+    tone: 'secondary',
+  },
+  {
+    label: 'Register Asset',
+    to: `/asset-registry/new?predictive_warning=${encodeURIComponent(`Asset registered under lease ${selectedLease.value.contract}`)}`,
+    icon: 'Boxes',
+    tone: 'secondary',
+  },
 ])
 
 const leaseAssetsById = reactive<Record<number, LeaseAssetDetail[]>>({
@@ -456,6 +496,37 @@ const handleDeleteLease = async (row: Record<string, unknown>) => {
         </SectionCard>
 
         <div class="space-y-6">
+          <SectionCard title="Related Actions">
+            <div class="grid gap-3">
+              <RouterLink
+                v-for="action in leaseRelatedActions"
+                :key="action.label"
+                :to="action.to"
+                class="flex items-center justify-between gap-4 rounded-[22px] border px-4 py-3 text-sm font-medium transition hover:-translate-y-0.5"
+                :class="
+                  action.tone === 'primary'
+                    ? 'border-slate-950 bg-slate-950 text-white hover:bg-slate-800 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500'
+                    : 'border-slate-200/80 bg-slate-50/80 text-slate-700 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200'
+                "
+              >
+                <span class="inline-flex items-center gap-3">
+                  <span
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                    :class="
+                      action.tone === 'primary'
+                        ? 'border-white/20 bg-white/10 text-white'
+                        : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'
+                    "
+                  >
+                    <BaseIcon :name="action.icon" :size="16" />
+                  </span>
+                  {{ action.label }}
+                </span>
+                <BaseIcon name="ArrowRight" :size="16" :class="action.tone === 'primary' ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'" />
+              </RouterLink>
+            </div>
+          </SectionCard>
+
           <SectionCard title="Lease Summary">
             <div class="space-y-3">
               <div

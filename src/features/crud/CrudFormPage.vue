@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
-import ApiSessionPanel from '@/components/ApiSessionPanel.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import CrudPageShell from '@/components/CrudPageShell.vue'
 import FormField from '@/components/FormField.vue'
@@ -46,6 +45,14 @@ const syncFormState = () => {
     }
   }
 
+  for (const item of config.value?.parentContext || []) {
+    nextKeys.add(item.queryKey)
+  }
+
+  for (const key of Object.keys(config.value?.sampleValues || {})) {
+    nextKeys.add(key)
+  }
+
   for (const key of Object.keys(formState)) {
     if (!nextKeys.has(key)) {
       delete formState[key]
@@ -56,6 +63,13 @@ const syncFormState = () => {
 
   for (const key of nextKeys) {
     formState[key] = initialValues[key] || ''
+  }
+
+  for (const key of nextKeys) {
+    const queryValue = route.query[key]
+    if (typeof queryValue === 'string' && queryValue) {
+      formState[key] = queryValue
+    }
   }
 
   if (masterTypeFromQuery.value && 'master_type' in formState) {
@@ -79,11 +93,65 @@ watch([config, mode, itemId, masterTypeFromQuery], syncFormState, { immediate: t
 
 const pageTitle = computed(() => (mode.value === 'edit' ? config.value?.editTitle : config.value?.createTitle) || 'Form')
 const pageDescription = computed(() => (mode.value === 'edit' ? config.value?.editDescription : config.value?.createDescription) || '')
-const submitLabel = computed(() => (mode.value === 'edit' ? 'Save Changes' : 'Create Record'))
+const isSubForm = computed(() => config.value?.formRole === 'sub')
+const submitLabel = computed(() => {
+  if (isSubForm.value) return 'Save Related Update'
+  return mode.value === 'edit' ? 'Save Changes' : 'Create Record'
+})
 const isAssetForm = computed(() => crudKey.value === 'assets')
 const isLeaseForm = computed(() => crudKey.value === 'leases')
 const isLicenseForm = computed(() => crudKey.value === 'licenses')
 const isMasterDataForm = computed(() => crudKey.value === 'masterData')
+const relatedHeaderActions = computed(() => {
+  if (!config.value?.relatedActions?.length || config.value.formRole === 'sub') return []
+
+  return config.value.relatedActions
+    .filter((action) => !action.onlyModes || action.onlyModes.includes(mode.value as 'create' | 'edit'))
+    .map((action) => ({
+      ...action,
+      to: action.resolveTo({
+        mode: mode.value as 'create' | 'edit',
+        itemId: itemId.value,
+        values: formState,
+      }),
+    }))
+})
+const missingParentContextLabels = computed(() => {
+  if (!isSubForm.value) return []
+
+  const requiredKeys = config.value?.requiredParentContextKeys || []
+
+  return requiredKeys
+    .filter((key) => !String(formState[key] || '').trim())
+    .map((key) => config.value?.parentContext?.find((item) => item.queryKey === key)?.label || key)
+})
+const hasMissingParentContext = computed(() => missingParentContextLabels.value.length > 0)
+const parentContextRows = computed(() => {
+  if (!isSubForm.value) return []
+
+  const rows: Array<{ label: string; value: string }> = []
+
+  for (const item of config.value?.parentContext || []) {
+    const value = formState[item.queryKey]
+    if (value) {
+      rows.push({
+        label: item.label,
+        value,
+      })
+    }
+  }
+
+  if (formState.asset_name) rows.push({ label: 'Parent Asset', value: formState.asset_name })
+  if (formState.transfer_number) rows.push({ label: 'Transfer Ref', value: formState.transfer_number })
+  if (formState.request_number) rows.push({ label: 'Request Ref', value: formState.request_number })
+  if (formState.requested_by) rows.push({ label: 'Requested By', value: formState.requested_by })
+  if (formState.location) rows.push({ label: 'Location Scope', value: selectedLocation.value?.name || formState.location })
+  if (formState.notes) rows.push({ label: 'Linked Note', value: formState.notes })
+
+  return rows
+    .filter((item, index, source) => source.findIndex((candidate) => candidate.label === item.label && candidate.value === item.value) === index)
+    .slice(0, 6)
+})
 
 const endpoints = computed(() => {
   if (!config.value) return []
@@ -180,6 +248,14 @@ const handleSubmit = async () => {
   requestState.successMessage = ''
   requestState.errorMessage = ''
 
+  if (hasMissingParentContext.value) {
+    validationErrors.push(
+      `Subform ini wajib memiliki parent context: ${missingParentContextLabels.value.join(', ')}.`,
+    )
+    requestState.errorMessage = 'Form turunan tidak boleh diproses tanpa referensi data induk.'
+    return
+  }
+
   const errors = config.value.validate?.(formState) || []
   if (errors.length) {
     validationErrors.push(...errors)
@@ -215,11 +291,51 @@ const handleSubmit = async () => {
     :description="pageDescription"
     :back-to="config.basePath"
     :submit-label="submitLabel"
+    :header-actions="relatedHeaderActions"
     :is-submitting="requestState.isSubmitting"
     @submit="handleSubmit"
   >
     <div class="grid gap-6 2xl:grid-cols-[1.55fr_0.95fr]">
       <div class="space-y-6">
+        <SectionCard
+          v-if="config.formRole === 'main' && relatedHeaderActions.length"
+          title="Related Form Actions"
+          description="Aksi relasional dijalankan langsung dari parent form yang sama agar operator bisa melanjutkan proses tanpa keluar konteks."
+        >
+          <div class="grid gap-3 md:grid-cols-2">
+            <RouterLink
+              v-for="action in relatedHeaderActions"
+              :key="`${config.key}-${action.label}-inline`"
+              :to="action.to"
+              class="flex items-center justify-between gap-4 rounded-[22px] border px-4 py-3 text-sm font-medium transition hover:-translate-y-0.5"
+              :class="
+                action.tone === 'primary'
+                  ? 'border-slate-950 bg-slate-950 text-white hover:bg-slate-800 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500'
+                  : 'border-slate-200/80 bg-slate-50/80 text-slate-700 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200'
+              "
+            >
+              <span class="inline-flex items-center gap-3">
+                <span
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
+                  :class="
+                    action.tone === 'primary'
+                      ? 'border-white/20 bg-white/10 text-white'
+                      : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'
+                  "
+                >
+                  <BaseIcon :name="action.icon" :size="16" />
+                </span>
+                {{ action.label }}
+              </span>
+              <BaseIcon
+                name="ArrowRight"
+                :size="16"
+                :class="action.tone === 'primary' ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'"
+              />
+            </RouterLink>
+          </div>
+        </SectionCard>
+
         <SectionCard
           v-if="validationErrors.length || requestState.successMessage || requestState.errorMessage"
           :title="requestState.successMessage ? 'Request Success' : 'Request Failed'"
@@ -261,6 +377,55 @@ const handleSubmit = async () => {
 
       <div class="space-y-6">
         <ApiEndpointList title="Form Endpoint" :endpoints="endpoints" />
+
+        <SectionCard
+          v-if="config.formRole === 'sub'"
+          title="Subform Scope"
+          description="Subform dipakai khusus untuk perubahan data turunan yang terkait parent record."
+        >
+          <div class="space-y-4">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm leading-6 text-slate-700 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200">
+              <p class="font-medium text-slate-900 dark:text-white">Pola baku subform</p>
+              <p class="mt-2">
+                Form ini hanya menangani update konteks operasional yang terkait data induk. Penambahan relasi baru tetap dimulai dari main form.
+              </p>
+            </div>
+
+            <div
+              v-if="hasMissingParentContext"
+              class="rounded-[22px] border border-rose-200 bg-rose-50/80 p-4 text-sm leading-6 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
+            >
+              <div class="flex items-start gap-3">
+                <div class="rounded-2xl bg-white/80 p-2 ring-1 ring-white/70 dark:bg-slate-950/40 dark:ring-white/10">
+                  <BaseIcon name="ShieldAlert" :size="16" />
+                </div>
+                <div>
+                  <p class="font-semibold">Parent context wajib dilengkapi</p>
+                  <p class="mt-1">
+                    Subform ini membutuhkan referensi induk berikut: {{ missingParentContextLabels.join(', ') }}.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="parentContextRows.length"
+              class="rounded-[22px] border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-500/20 dark:bg-sky-500/10"
+            >
+              <p class="text-xs font-semibold tracking-[0.2em] text-sky-700 uppercase dark:text-sky-200">Parent Context</p>
+              <div class="mt-3 space-y-2">
+                <div
+                  v-for="item in parentContextRows"
+                  :key="item.label"
+                  class="flex items-start justify-between gap-4 rounded-2xl bg-white/75 px-3 py-2 text-sm dark:bg-slate-950/40"
+                >
+                  <span class="font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</span>
+                  <span class="text-right text-slate-500 dark:text-slate-400">{{ item.value }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
 
         <SectionCard v-if="isAssetForm" title="Asset Relation Summary">
           <div class="space-y-4">
@@ -393,14 +558,6 @@ const handleSubmit = async () => {
           </div>
         </SectionCard>
 
-        <ApiSessionPanel />
-        <SectionCard title="Frontend Note" description="Halaman ini sudah siap untuk dihubungkan ke service API nyata.">
-          <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            <p>Struktur field dibangun dari dokumen implementasi agar tiap feature punya section yang jelas.</p>
-            <p>Mode `Create` dan `Update` sekarang sudah memakai sample seed, validasi per modul, dan endpoint backend dengan bearer token dari localStorage frontend.</p>
-            <p>Setelah submit sukses, halaman akan kembali ke list modul terkait secara otomatis.</p>
-          </div>
-        </SectionCard>
       </div>
     </div>
   </CrudPageShell>

@@ -14,10 +14,8 @@ Dokumen ini tidak menggantikan kontrak API. Untuk kontrak field dan sample
 response, gunakan juga:
 
 - `docs/api/frontend-api-reference.md`
-- `docs/api/frontend-crud-ui-options.md`
-- `docs/api/frontend-crud-state-options.md`
-- `docs/api/frontend-crud-implementation-checklist.md`
-- `docs/api/frontend-crud-field-mapping.md`
+- `docs/api/frontend-dashboard-report-catalog.md`
+- `docs/api/frontend-dashboard-implementation-plan.md`
 - `docs/api/frontend-form-simplification-guide.md`
 - `docs/api/frontend-seed-scenarios.md`
 - `docs/api/frontend-page-endpoint-map.md`

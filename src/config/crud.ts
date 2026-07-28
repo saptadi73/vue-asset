@@ -8,6 +8,7 @@ import {
   toCrudOptions,
   vendorRecords,
 } from '@/data/master-data'
+import { liveSeedIds } from '@/data/liveSeedIds'
 
 const yesNoOptions = [
   { label: 'Yes', value: 'yes' },
@@ -27,6 +28,7 @@ const maintenanceContractOptions = maintenanceContractRecords.map((item) => ({
 export const crudConfigs: Record<string, CrudConfig> = {
   assets: {
     key: 'assets',
+    formRole: 'main',
     title: 'Asset Registry',
     entityName: 'Asset',
     basePath: '/asset-registry',
@@ -47,6 +49,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveEditPath: (id) => `/assets/${id}`,
     resolveDeletePath: (id) => `/assets/${id}`,
     sampleValues: {
+      asset_id: liveSeedIds.asset_id,
       asset_code: 'AST-2026-001',
       asset_name: 'Dell Latitude 7440',
       category: 'cat-laptop',
@@ -64,7 +67,71 @@ export const crudConfigs: Record<string, CrudConfig> = {
       purchase_cost: '25000000',
       replacement_priority: 'medium',
       dynamic_attributes: 'CPU: Intel Core Ultra 7\nRAM: 32 GB\nStorage: 1 TB SSD',
+      maintenance_request_id: liveSeedIds.maintenance_request_id,
+      asset_transfer_id: liveSeedIds.asset_transfer_id,
+      stocktake_id: liveSeedIds.stocktake_id,
+      stocktake_session_id: liveSeedIds.stocktake_session_id,
     },
+    relatedActions: [
+      {
+        label: 'Request Maintenance',
+        icon: 'Wrench',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/maintenance/new?asset_id=${encodeURIComponent(values.asset_id || liveSeedIds.asset_id)}&asset_code=${encodeURIComponent(values.asset_code || '')}&asset_name=${encodeURIComponent(values.asset_name || '')}&request_date=2026-07-28&notes=${encodeURIComponent(`Follow-up asset ${values.asset_code || values.asset_name || ''}`)}`,
+      },
+      {
+        label: 'Update Maintenance',
+        icon: 'PencilRuler',
+        tone: 'primary',
+        onlyModes: ['edit'],
+        resolveTo: ({ values }) =>
+          `/maintenance/${values.maintenance_request_id || liveSeedIds.maintenance_request_id}/edit?asset_id=${encodeURIComponent(values.asset_id || liveSeedIds.asset_id)}&asset_code=${encodeURIComponent(values.asset_code || '')}&asset_name=${encodeURIComponent(values.asset_name || '')}`,
+      },
+      {
+        label: 'Create Transfer',
+        icon: 'ArrowRightLeft',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/transfers/new?asset_id=${encodeURIComponent(values.asset_id || liveSeedIds.asset_id)}&asset_code=${encodeURIComponent(values.asset_code || '')}&asset_name=${encodeURIComponent(values.asset_name || '')}&from_location=${encodeURIComponent(values.location || '')}&requested_by=${encodeURIComponent(values.custodian || '')}&notes=${encodeURIComponent(`Transfer initiated for ${values.asset_code || values.asset_name || ''}`)}`,
+      },
+      {
+        label: 'Update Transfer',
+        icon: 'Route',
+        tone: 'secondary',
+        onlyModes: ['edit'],
+        resolveTo: ({ values }) =>
+          `/transfers/${values.asset_transfer_id || values.transfer_id || liveSeedIds.asset_transfer_id}/edit?asset_id=${encodeURIComponent(values.asset_id || liveSeedIds.asset_id)}&asset_code=${encodeURIComponent(values.asset_code || '')}&asset_name=${encodeURIComponent(values.asset_name || '')}&from_location=${encodeURIComponent(values.location || '')}`,
+      },
+      {
+        label: 'Update Lease Contract',
+        icon: 'FilePenLine',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          values.lease_contract
+            ? `/leases/${values.lease_contract}/edit?vendor_partner=${encodeURIComponent(values.vendor_partner || '')}`
+            : `/leases/new?vendor_partner=${encodeURIComponent(values.vendor_partner || '')}&scope_summary=${encodeURIComponent(`Coverage for asset ${values.asset_name || values.asset_code || ''}`)}`,
+      },
+      {
+        label: 'Start Stocktake',
+        icon: 'QrCode',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/tracking/new?asset_id=${encodeURIComponent(values.asset_id || liveSeedIds.asset_id)}&asset_code=${encodeURIComponent(values.asset_code || '')}&asset_name=${encodeURIComponent(values.asset_name || '')}&notes=${encodeURIComponent(`Stocktake follow-up for asset ${values.asset_code || values.asset_name || ''}`)}&location=${encodeURIComponent(values.location || '')}`,
+      },
+      {
+        label: 'Update Stocktake',
+        icon: 'ScanLine',
+        tone: 'secondary',
+        onlyModes: ['edit'],
+        resolveTo: ({ values }) =>
+          `/tracking/${values.stocktake_session_id || values.stocktake_id || liveSeedIds.stocktake_session_id}/edit?asset_id=${encodeURIComponent(values.asset_id || liveSeedIds.asset_id)}&asset_code=${encodeURIComponent(values.asset_code || '')}&asset_name=${encodeURIComponent(values.asset_name || '')}&location=${encodeURIComponent(values.location || '')}`,
+      },
+    ],
     validate: (values) => {
       const errors: string[] = []
       if (!values.asset_code) errors.push('Asset Code wajib diisi.')
@@ -134,6 +201,15 @@ export const crudConfigs: Record<string, CrudConfig> = {
   },
   transfers: {
     key: 'transfers',
+    formRole: 'sub',
+    requiredParentContextKeys: ['asset_id', 'asset_name'],
+    parentContext: [
+      { queryKey: 'asset_transfer_id', label: 'Transfer ID' },
+      { queryKey: 'asset_id', label: 'Parent Asset ID' },
+      { queryKey: 'asset_code', label: 'Parent Asset Code' },
+      { queryKey: 'asset_name', label: 'Parent Asset' },
+      { queryKey: 'from_location', label: 'Origin Location' },
+    ],
     title: 'Asset Transfers',
     entityName: 'Transfer',
     basePath: '/transfers',
@@ -175,6 +251,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
     mapToPayload: (values) => ({
       transfer_number: values.transfer_number || undefined,
       transfer_date: values.transfer_date,
+      asset_id: values.asset_id || undefined,
       movement_purpose: values.movement_purpose || undefined,
       from_location_id: values.from_location,
       to_location_id: values.to_location,
@@ -243,6 +320,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
   },
   leases: {
     key: 'leases',
+    formRole: 'main',
     title: 'Leases',
     entityName: 'Lease Contract',
     basePath: '/leases',
@@ -276,7 +354,58 @@ export const crudConfigs: Record<string, CrudConfig> = {
       renewal_review_date: '2026-11-15',
       scope_summary: 'Kontrak lease untuk laptop project team.',
       notes: 'Sertakan addendum, SLA vendor, dan rencana renewal bila diperlukan.',
+      maintenance_request_id: liveSeedIds.maintenance_request_id,
+      asset_transfer_id: liveSeedIds.asset_transfer_id,
     },
+    relatedActions: [
+      {
+        label: 'Update Lease',
+        icon: 'PencilLine',
+        tone: 'primary',
+        onlyModes: ['edit'],
+        resolveTo: ({ itemId }) => `/leases/${itemId}/edit`,
+      },
+      {
+        label: 'Request Maintenance',
+        icon: 'Wrench',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/maintenance/new?lease_contract_id=${encodeURIComponent(values.contract_number || '')}&lease_contract_number=${encodeURIComponent(values.contract_number || '')}&notes=${encodeURIComponent(`Maintenance follow-up for lease ${values.contract_number || ''}`)}&asset_name=${encodeURIComponent(values.scope_summary || values.contract_number || '')}`,
+      },
+      {
+        label: 'Update Maintenance',
+        icon: 'PencilRuler',
+        tone: 'secondary',
+        onlyModes: ['edit'],
+        resolveTo: ({ values }) =>
+          `/maintenance/${values.maintenance_request_id || liveSeedIds.maintenance_request_id}/edit?lease_contract_id=${encodeURIComponent(values.contract_number || '')}&lease_contract_number=${encodeURIComponent(values.contract_number || '')}&asset_name=${encodeURIComponent(values.scope_summary || values.contract_number || '')}`,
+      },
+      {
+        label: 'Create Transfer',
+        icon: 'ArrowRightLeft',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/transfers/new?notes=${encodeURIComponent(`Transfer coordination for lease ${values.contract_number || ''}`)}`,
+      },
+      {
+        label: 'Update Transfer',
+        icon: 'Route',
+        tone: 'secondary',
+        onlyModes: ['edit'],
+        resolveTo: ({ values }) =>
+          `/transfers/${values.asset_transfer_id || values.transfer_id || liveSeedIds.asset_transfer_id}/edit?notes=${encodeURIComponent(`Transfer coordination for lease ${values.contract_number || ''}`)}`,
+      },
+      {
+        label: 'Register Asset',
+        icon: 'Boxes',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/asset-registry/new?vendor_partner=${encodeURIComponent(values.vendor_partner || '')}&predictive_warning=${encodeURIComponent(`Asset registered under lease ${values.contract_number || ''}`)}`,
+      },
+    ],
     validate: (values) => {
       const errors: string[] = []
       if (!values.contract_number) errors.push('Contract Number wajib diisi.')
@@ -356,6 +485,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
   },
   licenses: {
     key: 'licenses',
+    formRole: 'main',
     title: 'Software Licenses',
     entityName: 'Software License',
     basePath: '/licenses',
@@ -388,7 +518,59 @@ export const crudConfigs: Record<string, CrudConfig> = {
       owner_team: 'IT Infrastructure',
       assignment_policy: 'NAMED_AND_ASSET',
       notes: 'Renewal window Q4 2026',
+      maintenance_request_id: liveSeedIds.maintenance_request_id,
+      stocktake_id: liveSeedIds.stocktake_id,
+      stocktake_session_id: liveSeedIds.stocktake_session_id,
     },
+    relatedActions: [
+      {
+        label: 'Update License',
+        icon: 'PencilLine',
+        tone: 'primary',
+        onlyModes: ['edit'],
+        resolveTo: ({ itemId }) => `/licenses/${itemId}/edit`,
+      },
+      {
+        label: 'Update Asset Relation',
+        icon: 'MonitorCog',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/asset-registry/new?predictive_warning=${encodeURIComponent(`Software relation for ${values.product_name || ''}`)}`,
+      },
+      {
+        label: 'Request Maintenance',
+        icon: 'Wrench',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/maintenance/new?license_id=${encodeURIComponent(values.license_key || '')}&license_name=${encodeURIComponent(values.product_name || '')}&notes=${encodeURIComponent(`License issue follow-up for ${values.product_name || ''}`)}`,
+      },
+      {
+        label: 'Update Maintenance',
+        icon: 'PencilRuler',
+        tone: 'secondary',
+        onlyModes: ['edit'],
+        resolveTo: ({ values }) =>
+          `/maintenance/${values.maintenance_request_id || liveSeedIds.maintenance_request_id}/edit?license_id=${encodeURIComponent(values.license_id || values.license_key || '')}&license_name=${encodeURIComponent(values.product_name || '')}`,
+      },
+      {
+        label: 'Start Stocktake',
+        icon: 'QrCode',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/tracking/new?license_id=${encodeURIComponent(values.license_key || '')}&license_name=${encodeURIComponent(values.product_name || '')}&notes=${encodeURIComponent(`License/device audit for ${values.product_name || ''}`)}`,
+      },
+      {
+        label: 'Update Stocktake',
+        icon: 'ScanLine',
+        tone: 'secondary',
+        onlyModes: ['edit'],
+        resolveTo: ({ values }) =>
+          `/tracking/${values.stocktake_session_id || values.stocktake_id || liveSeedIds.stocktake_session_id}/edit?license_id=${encodeURIComponent(values.license_id || values.license_key || '')}&license_name=${encodeURIComponent(values.product_name || '')}`,
+      },
+    ],
     validate: (values) => {
       const errors: string[] = []
       const seatCapacity = Number(values.seat_capacity || '0')
@@ -459,6 +641,18 @@ export const crudConfigs: Record<string, CrudConfig> = {
   },
   tracking: {
     key: 'tracking',
+    formRole: 'sub',
+    requiredParentContextKeys: ['location'],
+    parentContext: [
+      { queryKey: 'stocktake_session_id', label: 'Stocktake Session ID' },
+      { queryKey: 'stocktake_id', label: 'Stocktake ID Alias' },
+      { queryKey: 'asset_id', label: 'Linked Asset ID' },
+      { queryKey: 'asset_code', label: 'Linked Asset Code' },
+      { queryKey: 'asset_name', label: 'Linked Asset' },
+      { queryKey: 'location', label: 'Scope Location' },
+      { queryKey: 'license_id', label: 'Linked License ID' },
+      { queryKey: 'license_name', label: 'Linked License' },
+    ],
     title: 'Tracking & Stocktake',
     entityName: 'Stocktake Session',
     basePath: '/tracking',
@@ -497,6 +691,8 @@ export const crudConfigs: Record<string, CrudConfig> = {
     },
     mapToPayload: (values) => ({
       session_number: values.session_name,
+      asset_id: values.asset_id || undefined,
+      license_id: values.license_id || undefined,
       location_id: values.location,
       scope_type: 'LOCATION',
       planned_start_at: values.start_date ? `${values.start_date}T00:00:00Z` : undefined,
@@ -565,6 +761,17 @@ export const crudConfigs: Record<string, CrudConfig> = {
   },
   maintenance: {
     key: 'maintenance',
+    formRole: 'sub',
+    requiredParentContextKeys: ['asset_name'],
+    parentContext: [
+      { queryKey: 'asset_id', label: 'Parent Asset ID' },
+      { queryKey: 'asset_code', label: 'Parent Asset Code' },
+      { queryKey: 'asset_name', label: 'Parent Asset' },
+      { queryKey: 'lease_contract_id', label: 'Linked Lease ID' },
+      { queryKey: 'lease_contract_number', label: 'Linked Lease' },
+      { queryKey: 'license_id', label: 'Linked License ID' },
+      { queryKey: 'license_name', label: 'Linked License' },
+    ],
     title: 'Maintenance',
     entityName: 'Maintenance Request',
     basePath: '/maintenance',
@@ -602,7 +809,9 @@ export const crudConfigs: Record<string, CrudConfig> = {
     },
     mapToPayload: (values) => ({
       request_number: values.request_number || undefined,
-      asset_id: values.asset_name,
+      asset_id: values.asset_id || values.asset_name,
+      lease_contract_id: values.lease_contract_id || undefined,
+      software_license_id: values.license_id || undefined,
       priority_code: values.priority,
       request_date: values.request_date || undefined,
       symptom_description: values.symptom,
@@ -633,6 +842,7 @@ export const crudConfigs: Record<string, CrudConfig> = {
   },
   masterData: {
     key: 'masterData',
+    formRole: 'main',
     title: 'Master Data',
     entityName: 'Master Record',
     basePath: '/master-data',
@@ -716,6 +926,31 @@ export const crudConfigs: Record<string, CrudConfig> = {
       is_active: 'yes',
       description: 'Digunakan untuk category perangkat laptop korporat.',
     },
+    relatedActions: [
+      {
+        label: 'Create Asset',
+        icon: 'Boxes',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: () => '/asset-registry/new',
+      },
+      {
+        label: 'Create Maintenance Request',
+        icon: 'Wrench',
+        tone: 'secondary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/maintenance/new?notes=${encodeURIComponent(`Follow-up from master data ${values.code || values.name || ''}`)}`,
+      },
+      {
+        label: 'Create Lease',
+        icon: 'FilePenLine',
+        tone: 'primary',
+        onlyModes: ['create', 'edit'],
+        resolveTo: ({ values }) =>
+          `/leases/new?scope_summary=${encodeURIComponent(`Contract reference from master ${values.code || values.name || ''}`)}`,
+      },
+    ],
     validate: (values) => {
       const errors: string[] = []
       if (!values.master_type) errors.push('Master Type wajib dipilih.')
