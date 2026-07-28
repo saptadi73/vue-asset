@@ -8,41 +8,41 @@ export interface MasterRecord {
 }
 
 export const assetCategoryRecords: MasterRecord[] = [
-  { id: 'cat-laptop', code: 'LAPTOP', name: 'Laptop', isActive: 'Yes' },
-  { id: 'cat-vehicle', code: 'VEHICLE', name: 'Vehicle', isActive: 'Yes' },
-  { id: 'cat-printer', code: 'PRINTER', name: 'Printer', isActive: 'Yes' },
-  { id: 'cat-network', code: 'NETWORK', name: 'Network Device', isActive: 'Yes' },
+  { id: '0e3231ad-c585-43eb-b33e-0c2aa24624d1', code: 'CAT-20260727123000', name: 'Rotating Equipment', isActive: 'Yes' },
+  { id: '0ef673c3-93d9-495e-93ff-025c55bbb9a1', code: 'CAT-20260727124500', name: 'Rotating Equipment', isActive: 'Yes' },
+  { id: '483033e4-cf68-48e5-8108-33929e7b6f90', code: 'CAT-20260727130000', name: 'Rotating Equipment', isActive: 'Yes' },
+  { id: 'bdcff26b-c2fd-48e1-a3eb-80446236a990', code: 'CAT-20260727204434', name: 'Category Smoke 20260727204434', isActive: 'Yes' },
 ]
 
 export const assetClassRecords: MasterRecord[] = [
-  { id: 'class-it-4y', code: 'IT-4Y', name: 'IT Equipment - 4 Years', isActive: 'Yes' },
-  { id: 'class-veh-8y', code: 'VEH-8Y', name: 'Vehicle - 8 Years', isActive: 'Yes' },
-  { id: 'class-off-5y', code: 'OFF-5Y', name: 'Office Equipment - 5 Years', isActive: 'Yes' },
-  { id: 'class-net-6y', code: 'NET-6Y', name: 'Network Infrastructure - 6 Years', isActive: 'Yes' },
+  { id: '2dfb30b3-de69-45c7-947e-05398e8c689b', code: 'CLS-20260727204434', name: 'Class Smoke 20260727204434', isActive: 'Yes' },
+  { id: '9d3f5b1c-7cd4-4514-befc-45e6c9e0129c', code: 'CLS-20260727204519', name: 'Class Smoke 20260727204519', isActive: 'Yes' },
+  { id: '63656014-b7f2-4d24-bc8d-68691de9329d', code: 'CLS-20260727204640', name: 'Class Smoke 20260727204640', isActive: 'Yes' },
+  { id: '3e9c6d68-72b9-46c8-91a5-be0585cab231', code: 'CLS-20260727204717', name: 'Class Smoke 20260727204717', isActive: 'Yes' },
 ]
 
 export const locationRecords: MasterRecord[] = [
-  { id: 'loc-hq-wh', code: 'HQ-WH', name: 'HQ Warehouse', isActive: 'Yes' },
-  { id: 'loc-site-a', code: 'SITE-A', name: 'Site A', isActive: 'Yes' },
-  { id: 'loc-finance', code: 'FIN', name: 'Finance Office', isActive: 'Yes' },
-  { id: 'loc-dc', code: 'DC-01', name: 'Data Center', isActive: 'Yes' },
+  { id: 'c75b4cb9-1481-4abe-9fb3-2560ce2ac762', code: 'LOC-A-20260727204434', name: 'Gudang A Smoke 20260727204434', isActive: 'Yes' },
+  { id: '237b416b-0232-419b-94d0-823a3e9bb065', code: 'LOC-A-20260727204519', name: 'Gudang A Smoke 20260727204519', isActive: 'Yes' },
+  { id: 'e96df69f-1947-4587-ba9a-8e47d0522558', code: 'LOC-A-20260727204640', name: 'Gudang A Smoke 20260727204640', isActive: 'Yes' },
+  { id: '3bcf3ee6-5c8b-4a16-b3fd-bc8a8ef63d1e', code: 'LOC-A-20260727204717', name: 'Gudang A Smoke 20260727204717', isActive: 'Yes' },
 ]
 
 export const vendorRecords: Array<MasterRecord & { kind: 'Vendor' | 'Service Partner'; phone: string }> = [
-  { id: 'partner-dell', code: 'VND-001', name: 'PT Dell Indonesia', isActive: 'Yes', kind: 'Vendor', phone: '+62-21-555-0101' },
-  { id: 'partner-toyota', code: 'VND-002', name: 'PT Astra Mobility', isActive: 'Yes', kind: 'Vendor', phone: '+62-21-555-0114' },
-  { id: 'partner-mekar', code: 'VND-003', name: 'PT Mekar Service Solusi', isActive: 'Yes', kind: 'Service Partner', phone: '+62-21-555-0199' },
-  { id: 'partner-cisco', code: 'VND-004', name: 'PT Infra Network Nusantara', isActive: 'Yes', kind: 'Vendor', phone: '+62-21-555-0155' },
+  { id: 'a9946bb0-9734-4c11-98b0-5a19b1eea3c7', code: 'BP-20260727204434', name: 'Vendor Smoke 20260727204434', isActive: 'Yes', kind: 'Vendor', phone: '021555000' },
+  { id: '7fe6fa45-9c1b-4cc0-8eac-ba0eec71c6d8', code: 'BP-20260727204519', name: 'Vendor Smoke 20260727204519', isActive: 'Yes', kind: 'Vendor', phone: '021555000' },
+  { id: '0848dc71-cbed-4a83-a730-6f51755aa75b', code: 'BP-20260727204640', name: 'Vendor Smoke 20260727204640', isActive: 'Yes', kind: 'Service Partner', phone: '021555000' },
+  { id: '5fab30f4-ee28-4341-a7ee-a30cc9a9063e', code: 'BP-20260727204717', name: 'Vendor Smoke 20260727204717', isActive: 'Yes', kind: 'Vendor', phone: '021555000' },
 ]
 
 export const leaseContractRecords = [
-  { id: 'lease-001', number: 'LS-2026-001', vendorId: 'partner-dell', vendorName: 'PT Dell Indonesia', endDate: '2026-12-31', status: 'ACTIVE' },
-  { id: 'lease-002', number: 'LS-2026-002', vendorId: 'partner-toyota', vendorName: 'PT Astra Mobility', endDate: '2026-08-14', status: 'REVIEW' },
+  { id: 'fb531e31-3fd6-4286-b0cf-af6e2912907b', number: 'LEASE-20260727235601-0C8841', vendorId: 'a9946bb0-9734-4c11-98b0-5a19b1eea3c7', vendorName: 'Vendor Smoke 20260727204434', endDate: '2026-12-31', status: 'ACTIVE' },
+  { id: 'dac61deb-ae54-45ac-b4e7-f79614bda872', number: 'LEASE-20260728000240-A61666', vendorId: '7fe6fa45-9c1b-4cc0-8eac-ba0eec71c6d8', vendorName: 'Vendor Smoke 20260727204519', endDate: '2026-12-31', status: 'ACTIVE' },
 ]
 
 export const maintenanceContractRecords = [
-  { id: 'mc-001', number: 'MC-2026-014', vendorId: 'partner-mekar', vendorName: 'PT Mekar Service Solusi', coverage: 'On-call corrective', endDate: '2026-08-09' },
-  { id: 'mc-002', number: 'MC-2026-021', vendorId: 'partner-cisco', vendorName: 'PT Infra Network Nusantara', coverage: 'Preventive quarterly', endDate: '2027-03-31' },
+  { id: 'f6047c70-f975-4b61-a65d-2bf889f1988a', number: 'AMC-20260727223012-ED7B80', vendorId: '19bc0e21-2911-4e36-be29-986021b39521', vendorName: 'Vendor Smoke AMC 20260727223012', coverage: 'Full contract coverage', endDate: '2026-12-31' },
+  { id: '1c292252-5e29-4a8a-a4d6-906203a17dfb', number: 'AMC-20260727223510-CB758F', vendorId: 'd6af4067-b26c-42b1-b3ef-3e4aa0d80b2e', vendorName: 'Vendor Smoke AMC 20260727223510', coverage: 'Full contract coverage', endDate: '2026-12-31' },
 ]
 
 export const toCrudOptions = <T extends { id: string; code?: string; name?: string; number?: string }>(

@@ -305,7 +305,9 @@ const handleSubmit = async () => {
     requestState.errorMessage =
       error instanceof ApiError
         ? `${error.message}${error.code ? ` [${error.code}]` : ''}`
-        : 'Terjadi kegagalan saat mengirim data ke backend.'
+        : error instanceof Error
+          ? error.message
+          : 'Terjadi kegagalan saat mengirim data ke backend.'
   } finally {
     requestState.isSubmitting = false
   }
