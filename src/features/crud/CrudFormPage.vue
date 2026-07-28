@@ -2,7 +2,6 @@
 import { computed, reactive, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import ApiEndpointList from '@/components/ApiEndpointList.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import CrudPageShell from '@/components/CrudPageShell.vue'
 import FormField from '@/components/FormField.vue'
@@ -169,11 +168,18 @@ const parentContextRows = computed(() => {
     .filter((item, index, source) => source.findIndex((candidate) => candidate.label === item.label && candidate.value === item.value) === index)
     .slice(0, 6)
 })
-
-const endpoints = computed(() => {
-  if (!config.value) return []
-  return [mode.value === 'edit' ? config.value.endpoints.edit : config.value.endpoints.create]
+const assetFormSections = computed(() => {
+  if (!isAssetForm.value) return []
+  return config.value?.sections || []
 })
+const assetBottomSectionTitles = new Set(['Financial and Attribute Notes', 'Asset Attachments'])
+const assetTopSections = computed(() =>
+  assetFormSections.value.filter((section) => !assetBottomSectionTitles.has(section.title)),
+)
+const assetBottomSections = computed(() =>
+  assetFormSections.value.filter((section) => assetBottomSectionTitles.has(section.title)),
+)
+const defaultSections = computed(() => (isAssetForm.value ? [] : (config.value?.sections || [])))
 
 const selectedCategory = computed(() =>
   assetCategoryRecords.find((item) => item.id === formState.category),
@@ -318,10 +324,11 @@ const handleSubmit = async () => {
     :is-submitting="requestState.isSubmitting"
     @submit="handleSubmit"
   >
-    <div class="grid gap-6 2xl:grid-cols-[1.55fr_0.95fr]">
-      <div class="space-y-6">
+    <div class="space-y-6">
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1.12fr)_340px]">
+        <div class="space-y-6">
         <SectionCard
-          v-if="config.formRole === 'main' && relatedHeaderActions.length"
+          v-if="config.formRole === 'main' && relatedHeaderActions.length && !isAssetForm"
           title="Related Form Actions"
           description="Aksi relasional dijalankan langsung dari parent form yang sama agar operator bisa melanjutkan proses tanpa keluar konteks."
         >
@@ -348,8 +355,31 @@ const handleSubmit = async () => {
           </div>
         </SectionCard>
 
+        <template v-if="isAssetForm">
+          <div class="space-y-6">
+            <SectionCard
+              v-for="section in assetTopSections"
+              :key="section.title"
+              :title="section.title"
+              :description="section.description"
+            >
+              <div class="grid gap-4 md:grid-cols-2">
+                <FormField
+                  v-for="field in section.fields"
+                  :key="field.key"
+                  :model-value="field.type === 'file' ? (fileState[field.key] ?? []) : (formState[field.key] ?? '')"
+                  @update:model-value="formState[field.key] = $event"
+                  @update:files="fileState[field.key] = $event"
+                  :field="field"
+                  :class="field.fullWidth || field.type === 'textarea' || field.type === 'file' ? 'md:col-span-2' : ''"
+                />
+              </div>
+            </SectionCard>
+          </div>
+        </template>
+
         <SectionCard
-          v-for="section in config.sections"
+          v-for="section in defaultSections"
           :key="section.title"
           :title="section.title"
           :description="section.description"
@@ -366,10 +396,16 @@ const handleSubmit = async () => {
             />
           </div>
         </SectionCard>
-      </div>
+        </div>
 
-      <div class="space-y-6">
-        <ApiEndpointList title="Form Endpoint" :endpoints="endpoints" />
+        <div class="space-y-6 xl:sticky xl:top-6 xl:self-start">
+        <SectionCard
+          v-if="isAssetForm && relatedHeaderActions.length"
+          title="Related Form Actions"
+          description="Aksi lanjutan dipindahkan ke sidebar agar area input asset registry tetap fokus dan lebih seimbang."
+        >
+          <RelatedActionsPanel :actions="relatedHeaderActions" />
+        </SectionCard>
 
         <SectionCard
           v-if="config.formRole === 'sub'"
@@ -433,12 +469,21 @@ const handleSubmit = async () => {
               </div>
 
               <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+                <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Asset Snapshot</p>
+                <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                  <p><span class="font-medium">Type:</span> {{ formState.asset_type ? formatEnumLabel(formState.asset_type) : 'Belum dipilih' }}</p>
+                  <p><span class="font-medium">Status:</span> {{ formState.status ? formatEnumLabel(formState.status) : 'Belum dipilih' }}</p>
+                  <p><span class="font-medium">Condition:</span> {{ formState.condition_status ? formatEnumLabel(formState.condition_status) : 'Belum dipilih' }}</p>
+                </div>
+              </div>
+
+              <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
                 <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Vendor & Contracts</p>
                 <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
                   <p><span class="font-medium">Vendor:</span> {{ selectedVendor?.name || 'Belum dipilih' }}</p>
                   <p><span class="font-medium">Lease:</span> {{ selectedLease?.number || 'Tidak terhubung' }}</p>
                   <p><span class="font-medium">Maintenance:</span> {{ selectedMaintenanceContract?.number || 'Tidak terhubung' }}</p>
-                  <p><span class="font-medium">Last Maintenance:</span> {{ formState.last_maintenance || 'Belum ada histori' }}</p>
+                  <p><span class="font-medium">Serial Number:</span> {{ formState.serial_number || 'Belum diisi' }}</p>
                 </div>
               </div>
             </div>
@@ -551,7 +596,29 @@ const handleSubmit = async () => {
           </div>
         </SectionCard>
 
+        </div>
       </div>
+
+      <section v-if="isAssetForm && assetBottomSections.length" class="grid gap-6 xl:grid-cols-2">
+        <SectionCard
+          v-for="section in assetBottomSections"
+          :key="section.title"
+          :title="section.title"
+          :description="section.description"
+        >
+          <div class="grid gap-4 md:grid-cols-2">
+            <FormField
+              v-for="field in section.fields"
+              :key="field.key"
+              :model-value="field.type === 'file' ? (fileState[field.key] ?? []) : (formState[field.key] ?? '')"
+              @update:model-value="formState[field.key] = $event"
+              @update:files="fileState[field.key] = $event"
+              :field="field"
+              :class="field.fullWidth || field.type === 'textarea' || field.type === 'file' ? 'md:col-span-2' : ''"
+            />
+          </div>
+        </SectionCard>
+      </section>
     </div>
   </CrudPageShell>
 </template>
