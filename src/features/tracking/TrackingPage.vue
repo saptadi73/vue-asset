@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
@@ -20,6 +21,7 @@ import {
   type TrackingSession,
 } from '@/services/tracking'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('tracking')!
 
@@ -129,12 +131,6 @@ const formatWindow = (startAt: string | null, endAt: string | null) => {
   if (!startAt && !endAt) return '-'
   return `${formatDateOnly(startAt)} - ${formatDateOnly(endAt)}`
 }
-
-const formatStatusLabel = (value: string) =>
-  value
-    .split('_')
-    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-    .join(' ')
 
 const countUnmatchedEvents = (session: TrackingSession) =>
   mapTrackingEventsFromSession(session).filter((item) => item.result === 'UNMATCHED').length
@@ -566,7 +562,7 @@ onBeforeUnmount(() => {
                 <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
                   <p><span class="font-medium">Window:</span> {{ formatWindow(selectedSession.plannedStartAt, selectedSession.plannedEndAt) }}</p>
                   <p><span class="font-medium">Scope:</span> {{ selectedSession.scopeType }}</p>
-                  <p><span class="font-medium">Status:</span> {{ formatStatusLabel(selectedSession.status) }}</p>
+                  <p><span class="font-medium">Status:</span> {{ formatEnumLabel(selectedSession.status) }}</p>
                 </div>
               </div>
 
@@ -579,9 +575,20 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <div
-                class="rounded-[22px] border p-5"
-                :class="
+              <DetailHighlightCard
+                eyebrow="Operational Note"
+                :status-label="formatEnumLabel(selectedSession.status)"
+                :note="selectedSession.notes || 'Belum ada catatan operasional.'"
+                :icon="
+                  selectedSession.status === 'APPROVED'
+                    ? 'BadgeCheck'
+                    : selectedSession.status === 'COMPLETED'
+                      ? 'ClipboardCheck'
+                      : selectedSession.status === 'IN_PROGRESS'
+                        ? 'ScanSearch'
+                        : 'Clock3'
+                "
+                :tone="
                   selectedSession.status === 'DRAFT'
                     ? 'border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-slate-950/40'
                     : selectedSession.status === 'IN_PROGRESS'
@@ -590,38 +597,16 @@ onBeforeUnmount(() => {
                         ? 'border-amber-200 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10'
                         : 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
                 "
-              >
-                <div class="flex items-start gap-3">
-                  <div class="rounded-2xl bg-white/80 p-2 ring-1 ring-white/60 dark:bg-slate-950/40 dark:ring-white/10">
-                    <BaseIcon
-                      :name="selectedSession.status === 'APPROVED' ? 'BadgeCheck' : selectedSession.status === 'COMPLETED' ? 'ClipboardCheck' : selectedSession.status === 'IN_PROGRESS' ? 'ScanSearch' : 'Clock3'"
-                      :size="18"
-                    />
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-xs font-semibold tracking-[0.18em] uppercase opacity-70">Operational Note</p>
-                    <div class="mt-3">
-                      <span
-                        class="inline-flex max-w-full rounded-full px-3 py-1 text-xs font-semibold tracking-[0.12em] uppercase ring-1"
-                        :class="
-                          selectedSession.status === 'DRAFT'
-                            ? 'bg-slate-200/80 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
-                            : selectedSession.status === 'IN_PROGRESS'
-                              ? 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200'
-                              : selectedSession.status === 'COMPLETED'
-                                ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
-                                : 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
-                        "
-                      >
-                        {{ formatStatusLabel(selectedSession.status) }}
-                      </span>
-                    </div>
-                    <p class="mt-3 text-sm leading-7 opacity-90">
-                      {{ selectedSession.notes || 'Belum ada catatan operasional.' }}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                :badge-tone="
+                  selectedSession.status === 'DRAFT'
+                    ? 'bg-slate-200/80 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
+                    : selectedSession.status === 'IN_PROGRESS'
+                      ? 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200'
+                      : selectedSession.status === 'COMPLETED'
+                        ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
+                        : 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
+                "
+              />
             </div>
           </SectionCard>
 

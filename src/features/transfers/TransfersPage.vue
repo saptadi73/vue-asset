@@ -6,11 +6,13 @@ import { RouterLink } from 'vue-router'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import { deleteCrudRecord } from '@/services/crud'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('transfers')!
 
@@ -309,29 +311,32 @@ const handleDeleteTransfer = async (row: Record<string, unknown>) => {
       />
 
       <div class="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <SectionCard :title="`${selectedTransfer.number} · ${selectedTransfer.purpose}`">
+        <SectionCard :title="`${selectedTransfer.number} - ${selectedTransfer.purpose}`">
           <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
               <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Route</p>
-              <div class="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
                 <p><span class="font-medium">From:</span> {{ selectedTransfer.from }}</p>
                 <p><span class="font-medium">To:</span> {{ selectedTransfer.to }}</p>
                 <p><span class="font-medium">Transfer Date:</span> {{ selectedTransfer.transfer_date }}</p>
               </div>
             </div>
 
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
               <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Workflow</p>
-              <div class="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
-                <p><span class="font-medium">Status:</span> {{ selectedTransfer.status }}</p>
+              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+                <p><span class="font-medium">Status:</span> {{ formatEnumLabel(selectedTransfer.status) }}</p>
                 <p><span class="font-medium">Current Step:</span> {{ selectedTransfer.current_step }}</p>
                 <p><span class="font-medium">Asset Items:</span> {{ selectedTransfer.asset_count }}</p>
               </div>
             </div>
 
-            <div
-              class="rounded-[22px] border p-4"
-              :class="
+            <DetailHighlightCard
+              eyebrow="Route Note"
+              :status-label="formatEnumLabel(selectedTransfer.status)"
+              :note="selectedTransfer.route_note"
+              :icon="selectedTransfer.status === 'COMPLETED' ? 'CircleCheckBig' : selectedTransfer.status === 'APPROVED' ? 'BadgeCheck' : 'ArrowRightLeft'"
+              :tone="
                 selectedTransfer.status === 'DRAFT'
                   ? 'border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-slate-950/40'
                   : selectedTransfer.status === 'SUBMITTED'
@@ -340,21 +345,16 @@ const handleDeleteTransfer = async (row: Record<string, unknown>) => {
                       ? 'border-violet-200 bg-violet-50/80 dark:border-violet-500/20 dark:bg-violet-500/10'
                       : 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
               "
-            >
-              <div class="flex items-start gap-3">
-                <div class="rounded-2xl bg-white/80 p-2 ring-1 ring-white/60 dark:bg-slate-950/40 dark:ring-white/10">
-                  <BaseIcon
-                    :name="selectedTransfer.status === 'COMPLETED' ? 'CircleCheckBig' : selectedTransfer.status === 'APPROVED' ? 'BadgeCheck' : 'ArrowRightLeft'"
-                    :size="18"
-                  />
-                </div>
-                <div>
-                  <p class="text-xs font-semibold tracking-[0.18em] uppercase opacity-70">Route Note</p>
-                  <p class="mt-2 text-sm font-semibold">{{ selectedTransfer.status }}</p>
-                  <p class="mt-2 text-sm leading-6 opacity-90">{{ selectedTransfer.route_note }}</p>
-                </div>
-              </div>
-            </div>
+              :badge-tone="
+                selectedTransfer.status === 'DRAFT'
+                  ? 'bg-slate-200/80 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
+                  : selectedTransfer.status === 'SUBMITTED'
+                    ? 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200'
+                    : selectedTransfer.status === 'APPROVED'
+                      ? 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200'
+                      : 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
+              "
+            />
           </div>
         </SectionCard>
 

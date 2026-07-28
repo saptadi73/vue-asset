@@ -19,6 +19,7 @@ import {
 } from '@/data/master-data'
 import { submitCrudForm } from '@/services/crud'
 import { ApiError } from '@/services/http'
+import { formatEnumLabel } from '@/utils/formatters'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,6 +81,8 @@ const pageTitle = computed(() => (mode.value === 'edit' ? config.value?.editTitl
 const pageDescription = computed(() => (mode.value === 'edit' ? config.value?.editDescription : config.value?.createDescription) || '')
 const submitLabel = computed(() => (mode.value === 'edit' ? 'Save Changes' : 'Create Record'))
 const isAssetForm = computed(() => crudKey.value === 'assets')
+const isLeaseForm = computed(() => crudKey.value === 'leases')
+const isLicenseForm = computed(() => crudKey.value === 'licenses')
 const isMasterDataForm = computed(() => crudKey.value === 'masterData')
 
 const endpoints = computed(() => {
@@ -97,7 +100,7 @@ const selectedLocation = computed(() =>
   locationRecords.find((item) => item.id === formState.location),
 )
 const selectedVendor = computed(() =>
-  vendorRecords.find((item) => item.id === formState.vendor_partner),
+  vendorRecords.find((item) => item.id === (formState.vendor_partner || formState.vendor_name)),
 )
 const selectedLease = computed(() =>
   leaseContractRecords.find((item) => item.id === formState.lease_contract),
@@ -147,6 +150,27 @@ const masterTypeLabel = computed(() => {
     default:
       return 'Master Record'
   }
+})
+
+const leaseMonthlyPaymentFormatted = computed(() => {
+  if (!formState.monthly_payment) return 'Belum diisi'
+  const amount = Number(formState.monthly_payment)
+  if (!Number.isFinite(amount)) return formState.monthly_payment
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount)
+})
+
+const licenseAvailableSeats = computed(() => {
+  const capacity = Number(formState.seat_capacity || '0')
+  const used = Number(formState.used_seats || '0')
+  if (!Number.isFinite(capacity) || !Number.isFinite(used)) return 'Belum valid'
+  return String(Math.max(capacity - used, 0))
+})
+
+const licenseUtilizationPct = computed(() => {
+  const capacity = Number(formState.seat_capacity || '0')
+  const used = Number(formState.used_seats || '0')
+  if (capacity <= 0 || !Number.isFinite(capacity) || !Number.isFinite(used)) return '0%'
+  return `${Math.round((used / capacity) * 100)}%`
 })
 
 const handleSubmit = async () => {
@@ -288,6 +312,84 @@ const handleSubmit = async () => {
             <p class="mt-2 text-slate-500 dark:text-slate-400">
               Record ini akan menjadi sumber dropdown, validasi relasi, dan referensi transaksi di modul asset management.
             </p>
+          </div>
+        </SectionCard>
+
+        <SectionCard v-if="isLeaseForm" title="Lease Contract Context">
+          <div class="space-y-4">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+              <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Vendor & Ownership</p>
+              <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                <p><span class="font-medium">Vendor:</span> {{ selectedVendor?.name || 'Belum dipilih' }}</p>
+                <p><span class="font-medium">Owner Team:</span> {{ formState.owner_team || 'Belum diisi' }}</p>
+                <p><span class="font-medium">Contract Type:</span> {{ formState.contract_type ? formatEnumLabel(formState.contract_type) : 'Belum dipilih' }}</p>
+              </div>
+            </div>
+
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+              <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Payment Snapshot</p>
+              <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                <p><span class="font-medium">Monthly Payment:</span> {{ leaseMonthlyPaymentFormatted }}</p>
+                <p><span class="font-medium">Payment Cycle:</span> {{ formState.payment_cycle ? formatEnumLabel(formState.payment_cycle) : 'Belum dipilih' }}</p>
+                <p><span class="font-medium">Next Due Date:</span> {{ formState.next_due_date || 'Belum diisi' }}</p>
+                <p><span class="font-medium">Renewal Review:</span> {{ formState.renewal_review_date || 'Belum dijadwalkan' }}</p>
+              </div>
+            </div>
+
+            <div
+              class="rounded-[22px] border p-4 text-sm leading-6"
+              :class="
+                formState.status === 'REVIEW'
+                  ? 'border-amber-200 bg-amber-50/80 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100'
+                  : formState.status === 'CLOSED'
+                    ? 'border-slate-200 bg-slate-50/80 text-slate-800 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200'
+                    : 'border-emerald-200 bg-emerald-50/80 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100'
+              "
+            >
+              <p class="font-semibold">{{ formState.status ? formatEnumLabel(formState.status) : 'Lease Draft Context' }}</p>
+              <p class="mt-2 opacity-90">
+                {{ formState.scope_summary || formState.notes || 'Isi scope summary untuk membantu reviewer memahami cakupan kontrak, item leased, dan kebutuhan renewal.' }}
+              </p>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard v-if="isLicenseForm" title="License Allocation Context">
+          <div class="space-y-4">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+              <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Vendor & Ownership</p>
+              <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                <p><span class="font-medium">Vendor:</span> {{ selectedVendor?.name || 'Belum dipilih' }}</p>
+                <p><span class="font-medium">Owner Team:</span> {{ formState.owner_team || 'Belum diisi' }}</p>
+                <p><span class="font-medium">License Type:</span> {{ formState.license_type ? formatEnumLabel(formState.license_type) : 'Belum dipilih' }}</p>
+              </div>
+            </div>
+
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+              <p class="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">Seat Snapshot</p>
+              <div class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                <p><span class="font-medium">Seat Capacity:</span> {{ formState.seat_capacity || '0' }}</p>
+                <p><span class="font-medium">Used Seats:</span> {{ formState.used_seats || '0' }}</p>
+                <p><span class="font-medium">Available Seats:</span> {{ licenseAvailableSeats }}</p>
+                <p><span class="font-medium">Utilization:</span> {{ licenseUtilizationPct }}</p>
+              </div>
+            </div>
+
+            <div
+              class="rounded-[22px] border p-4 text-sm leading-6"
+              :class="
+                formState.status === 'EXPIRED'
+                  ? 'border-rose-200 bg-rose-50/80 text-rose-900 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100'
+                  : formState.status === 'WARNING'
+                    ? 'border-amber-200 bg-amber-50/80 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100'
+                    : 'border-emerald-200 bg-emerald-50/80 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100'
+              "
+            >
+              <p class="font-semibold">{{ formState.status ? formatEnumLabel(formState.status) : 'License Draft Context' }}</p>
+              <p class="mt-2 opacity-90">
+                {{ formState.notes || 'Isi policy assignment, owner team, dan renewal review date agar operator bisa menilai seat risk dengan cepat.' }}
+              </p>
+            </div>
           </div>
         </SectionCard>
 

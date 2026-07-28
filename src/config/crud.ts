@@ -264,29 +264,61 @@ export const crudConfigs: Record<string, CrudConfig> = {
     resolveDeletePath: (id) => `/lease-contracts/${id}`,
     sampleValues: {
       contract_number: 'LS-2026-005',
-      vendor_name: 'PT Rental Teknologi',
+      vendor_partner: 'partner-dell',
+      contract_type: 'DEVICE_LEASE',
       status: 'ACTIVE',
       start_date: '2026-07-01',
       end_date: '2026-12-31',
       monthly_payment: '42000000',
-      notes: 'Kontrak lease untuk laptop project team.',
+      payment_cycle: 'MONTHLY',
+      next_due_date: '2026-08-05',
+      owner_team: 'IT Operations',
+      renewal_review_date: '2026-11-15',
+      scope_summary: 'Kontrak lease untuk laptop project team.',
+      notes: 'Sertakan addendum, SLA vendor, dan rencana renewal bila diperlukan.',
     },
     validate: (values) => {
       const errors: string[] = []
       if (!values.contract_number) errors.push('Contract Number wajib diisi.')
+      if (!values.vendor_partner) errors.push('Vendor wajib dipilih.')
       if (!values.start_date || !values.end_date) errors.push('Periode kontrak wajib lengkap.')
       if (values.start_date && values.end_date && values.end_date < values.start_date) {
         errors.push('End Date tidak boleh lebih awal dari Start Date.')
       }
       return errors
     },
+    mapToPayload: (values) => ({
+      contract_number: values.contract_number,
+      vendor_partner_id: values.vendor_partner,
+      contract_type: values.contract_type || undefined,
+      status: values.status || undefined,
+      start_date: values.start_date || undefined,
+      end_date: values.end_date || undefined,
+      monthly_payment: values.monthly_payment ? Number(values.monthly_payment) : undefined,
+      payment_cycle: values.payment_cycle || undefined,
+      next_due_date: values.next_due_date || undefined,
+      renewal_review_date: values.renewal_review_date || undefined,
+      notes: values.notes || undefined,
+      scope_summary: values.scope_summary || undefined,
+      owner_team: values.owner_team || undefined,
+    }),
     sections: [
       {
         title: 'Contract Identity',
         description: 'Informasi utama kontrak lease.',
         fields: [
           { key: 'contract_number', label: 'Contract Number', type: 'text', placeholder: 'LS-2026-005' },
-          { key: 'vendor_name', label: 'Vendor Name', type: 'text', placeholder: 'PT Rental Teknologi' },
+          { key: 'vendor_partner', label: 'Vendor Partner', type: 'select', options: vendorOptions, required: true },
+          {
+            key: 'contract_type',
+            label: 'Contract Type',
+            type: 'select',
+            options: [
+              { label: 'Device Lease', value: 'DEVICE_LEASE' },
+              { label: 'Vehicle Lease', value: 'VEHICLE_LEASE' },
+              { label: 'Equipment Rental', value: 'EQUIPMENT_RENTAL' },
+            ],
+          },
           { key: 'status', label: 'Status', type: 'select', options: [{ label: 'ACTIVE', value: 'ACTIVE' }, { label: 'REVIEW', value: 'REVIEW' }, { label: 'CLOSED', value: 'CLOSED' }] },
         ],
       },
@@ -297,7 +329,27 @@ export const crudConfigs: Record<string, CrudConfig> = {
           { key: 'start_date', label: 'Start Date', type: 'date' },
           { key: 'end_date', label: 'End Date', type: 'date' },
           { key: 'monthly_payment', label: 'Monthly Payment', type: 'number', placeholder: '42000000' },
-          { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Sertakan cakupan aset atau syarat penting kontrak.' },
+          {
+            key: 'payment_cycle',
+            label: 'Payment Cycle',
+            type: 'select',
+            options: [
+              { label: 'Monthly', value: 'MONTHLY' },
+              { label: 'Quarterly', value: 'QUARTERLY' },
+              { label: 'Semi Annual', value: 'SEMI_ANNUAL' },
+            ],
+          },
+          { key: 'next_due_date', label: 'Next Due Date', type: 'date' },
+          { key: 'renewal_review_date', label: 'Renewal Review Date', type: 'date' },
+          { key: 'owner_team', label: 'Owner Team', type: 'text', placeholder: 'IT Operations' },
+        ],
+      },
+      {
+        title: 'Scope and Notes',
+        description: 'Ringkasan cakupan kontrak dan catatan komersial.',
+        fields: [
+          { key: 'scope_summary', label: 'Scope Summary', type: 'textarea', fullWidth: true, placeholder: 'Kontrak untuk laptop project team dan perangkat pendukung.' },
+          { key: 'notes', label: 'Notes', type: 'textarea', fullWidth: true, placeholder: 'Sertakan cakupan aset atau syarat penting kontrak.' },
         ],
       },
     ],
@@ -326,10 +378,15 @@ export const crudConfigs: Record<string, CrudConfig> = {
     sampleValues: {
       product_name: 'Microsoft 365 E3',
       license_key: 'M365-E3-09A2',
+      vendor_partner: 'partner-dell',
+      license_type: 'SUBSCRIPTION',
       status: 'ACTIVE',
       seat_capacity: '220',
       used_seats: '188',
       expires_at: '2026-12-31',
+      renewal_review_date: '2026-11-01',
+      owner_team: 'IT Infrastructure',
+      assignment_policy: 'NAMED_AND_ASSET',
       notes: 'Renewal window Q4 2026',
     },
     validate: (values) => {
@@ -337,9 +394,24 @@ export const crudConfigs: Record<string, CrudConfig> = {
       const seatCapacity = Number(values.seat_capacity || '0')
       const usedSeats = Number(values.used_seats || '0')
       if (!values.product_name) errors.push('Product Name wajib diisi.')
+      if (!values.vendor_partner) errors.push('Vendor wajib dipilih.')
       if (seatCapacity > 0 && usedSeats > seatCapacity) errors.push('Used Seats tidak boleh melebihi Seat Capacity.')
       return errors
     },
+    mapToPayload: (values) => ({
+      product_name: values.product_name,
+      license_key: values.license_key || undefined,
+      vendor_partner_id: values.vendor_partner || undefined,
+      license_type: values.license_type || undefined,
+      status: values.status || undefined,
+      seat_capacity: values.seat_capacity ? Number(values.seat_capacity) : undefined,
+      used_seats: values.used_seats ? Number(values.used_seats) : undefined,
+      expires_at: values.expires_at || undefined,
+      renewal_review_date: values.renewal_review_date || undefined,
+      owner_team: values.owner_team || undefined,
+      assignment_policy: values.assignment_policy || undefined,
+      notes: values.notes || undefined,
+    }),
     sections: [
       {
         title: 'License Identity',
@@ -347,6 +419,17 @@ export const crudConfigs: Record<string, CrudConfig> = {
         fields: [
           { key: 'product_name', label: 'Product Name', type: 'text', placeholder: 'Microsoft 365 E3' },
           { key: 'license_key', label: 'License Key', type: 'text', placeholder: 'M365-E3-09A2' },
+          { key: 'vendor_partner', label: 'Vendor Partner', type: 'select', options: vendorOptions, required: true },
+          {
+            key: 'license_type',
+            label: 'License Type',
+            type: 'select',
+            options: [
+              { label: 'Subscription', value: 'SUBSCRIPTION' },
+              { label: 'Annual Term', value: 'ANNUAL_TERM' },
+              { label: 'Perpetual', value: 'PERPETUAL' },
+            ],
+          },
           { key: 'status', label: 'Status', type: 'select', options: [{ label: 'ACTIVE', value: 'ACTIVE' }, { label: 'WARNING', value: 'WARNING' }, { label: 'EXPIRED', value: 'EXPIRED' }] },
         ],
       },
@@ -357,7 +440,19 @@ export const crudConfigs: Record<string, CrudConfig> = {
           { key: 'seat_capacity', label: 'Seat Capacity', type: 'number', placeholder: '220' },
           { key: 'used_seats', label: 'Used Seats', type: 'number', placeholder: '188' },
           { key: 'expires_at', label: 'Expires At', type: 'date' },
-          { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Tambahkan vendor, PO renewal, atau ketentuan assignment.' },
+          { key: 'renewal_review_date', label: 'Renewal Review Date', type: 'date' },
+          { key: 'owner_team', label: 'Owner Team', type: 'text', placeholder: 'IT Infrastructure' },
+          {
+            key: 'assignment_policy',
+            label: 'Assignment Policy',
+            type: 'select',
+            options: [
+              { label: 'Named + Asset', value: 'NAMED_AND_ASSET' },
+              { label: 'Named User Only', value: 'NAMED_ONLY' },
+              { label: 'Shared Pool', value: 'SHARED_POOL' },
+            ],
+          },
+          { key: 'notes', label: 'Notes', type: 'textarea', fullWidth: true, placeholder: 'Tambahkan vendor, PO renewal, atau ketentuan assignment.' },
         ],
       },
     ],

@@ -5,12 +5,14 @@ import { computed, ref } from 'vue'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { maintenanceContractRecords } from '@/data/master-data'
 import { getCrudConfig } from '@/config/crud'
 import { deleteCrudRecord } from '@/services/crud'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('assets')!
 
@@ -200,29 +202,32 @@ const handleDeleteAsset = async (row: Record<string, unknown>) => {
       />
 
       <div class="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
-        <SectionCard :title="`${selectedAsset.asset_code} · ${selectedAsset.asset_name}`">
+        <SectionCard :title="`${selectedAsset.asset_code} - ${selectedAsset.asset_name}`">
           <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
               <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Classification</p>
-              <div class="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
                 <p><span class="font-medium">Category:</span> {{ selectedAsset.category }}</p>
                 <p><span class="font-medium">Vendor:</span> {{ selectedAsset.vendor }}</p>
                 <p><span class="font-medium">Location:</span> {{ selectedAsset.location }}</p>
               </div>
             </div>
 
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
               <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Status</p>
-              <div class="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
-                <p><span class="font-medium">Current Status:</span> {{ selectedAsset.status }}</p>
+              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+                <p><span class="font-medium">Current Status:</span> {{ formatEnumLabel(selectedAsset.status) }}</p>
                 <p><span class="font-medium">Last Maintenance:</span> {{ selectedAsset.last_maintenance }}</p>
                 <p><span class="font-medium">Maintenance Mode:</span> {{ selectedAsset.maintenance_mode }}</p>
               </div>
             </div>
 
-            <div
-              class="rounded-[22px] border p-4"
-              :class="
+            <DetailHighlightCard
+              eyebrow="Warning"
+              :status-label="formatEnumLabel(selectedAsset.attention)"
+              :note="selectedAsset.warning_detail"
+              :icon="selectedAsset.attention === 'CONTRACT' ? 'ShieldAlert' : selectedAsset.attention === 'NONE' ? 'CircleCheckBig' : 'TriangleAlert'"
+              :tone="
                 selectedAsset.attention === 'NONE'
                   ? 'border-slate-200/80 bg-slate-50/80 dark:border-white/10 dark:bg-slate-950/40'
                   : selectedAsset.attention === 'PREDICTIVE'
@@ -231,21 +236,16 @@ const handleDeleteAsset = async (row: Record<string, unknown>) => {
                       ? 'border-rose-200 bg-rose-50/80 dark:border-rose-500/20 dark:bg-rose-500/10'
                       : 'border-violet-200 bg-violet-50/80 dark:border-violet-500/20 dark:bg-violet-500/10'
               "
-            >
-              <div class="flex items-start gap-3">
-                <div class="rounded-2xl bg-white/80 p-2 ring-1 ring-white/60 dark:bg-slate-950/40 dark:ring-white/10">
-                  <BaseIcon
-                    :name="selectedAsset.attention === 'CONTRACT' ? 'ShieldAlert' : selectedAsset.attention === 'NONE' ? 'CircleCheckBig' : 'TriangleAlert'"
-                    :size="18"
-                  />
-                </div>
-                <div>
-                  <p class="text-xs font-semibold tracking-[0.18em] uppercase opacity-70">Warning</p>
-                  <p class="mt-2 text-sm font-semibold">{{ selectedAsset.attention }}</p>
-                  <p class="mt-2 text-sm leading-6 opacity-90">{{ selectedAsset.warning_detail }}</p>
-                </div>
-              </div>
-            </div>
+              :badge-tone="
+                selectedAsset.attention === 'NONE'
+                  ? 'bg-slate-200/80 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
+                  : selectedAsset.attention === 'PREDICTIVE'
+                    ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
+                    : selectedAsset.attention === 'CONTRACT'
+                      ? 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200'
+                      : 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200'
+              "
+            />
           </div>
         </SectionCard>
 

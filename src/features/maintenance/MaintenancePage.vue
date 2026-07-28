@@ -6,11 +6,13 @@ import { RouterLink } from 'vue-router'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import { deleteCrudRecord } from '@/services/crud'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('maintenance')!
 
@@ -374,44 +376,42 @@ const handleDeleteMaintenance = async (row: Record<string, unknown>) => {
       />
 
       <div class="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <SectionCard :title="`${selectedRequest.request_no} · ${selectedRequest.asset}`">
+        <SectionCard :title="`${selectedRequest.request_no} - ${selectedRequest.asset}`">
           <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
               <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Request Context</p>
-              <div class="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
                 <p><span class="font-medium">Request Date:</span> {{ selectedRequest.request_date }}</p>
                 <p><span class="font-medium">Priority:</span> {{ selectedRequest.priority }}</p>
-                <p><span class="font-medium">Status:</span> {{ selectedRequest.status }}</p>
+                <p><span class="font-medium">Status:</span> {{ formatEnumLabel(selectedRequest.status) }}</p>
               </div>
             </div>
 
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
+            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
               <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Execution</p>
-              <div class="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
                 <p><span class="font-medium">Mode:</span> {{ selectedRequest.execution_mode }}</p>
                 <p><span class="font-medium">Team:</span> {{ selectedRequest.team }}</p>
                 <p><span class="font-medium">Vendor:</span> {{ selectedRequest.vendor }}</p>
               </div>
             </div>
 
-            <div
-              class="rounded-[22px] border p-4"
-              :class="crudStatusTone[selectedRequest.status]"
-            >
-              <div class="flex items-start gap-3">
-                <div class="rounded-2xl bg-white/80 p-2 ring-1 ring-white/60 dark:bg-slate-950/40 dark:ring-white/10">
-                  <BaseIcon
-                    :name="selectedRequest.status === 'COMPLETED' ? 'CircleCheckBig' : selectedRequest.status === 'IN_PROGRESS' ? 'Wrench' : 'TriangleAlert'"
-                    :size="18"
-                  />
-                </div>
-                <div>
-                  <p class="text-xs font-semibold tracking-[0.18em] uppercase opacity-70">Symptom</p>
-                  <p class="mt-2 text-sm font-semibold">{{ selectedRequest.status }}</p>
-                  <p class="mt-2 text-sm leading-6 opacity-90">{{ selectedRequest.symptom }}</p>
-                </div>
-              </div>
-            </div>
+            <DetailHighlightCard
+              eyebrow="Symptom"
+              :status-label="formatEnumLabel(selectedRequest.status)"
+              :note="selectedRequest.symptom"
+              :icon="selectedRequest.status === 'COMPLETED' ? 'CircleCheckBig' : selectedRequest.status === 'IN_PROGRESS' ? 'Wrench' : 'TriangleAlert'"
+              :tone="crudStatusTone[selectedRequest.status]"
+              :badge-tone="
+                selectedRequest.status === 'OPEN'
+                  ? 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200'
+                  : selectedRequest.status === 'ASSIGNED'
+                    ? 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200'
+                    : selectedRequest.status === 'IN_PROGRESS'
+                      ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
+                      : 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
+              "
+            />
           </div>
         </SectionCard>
 
