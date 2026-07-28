@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const DashboardPage = () => import('@/features/dashboard/DashboardPage.vue')
 const AssetRegistryPage = () => import('@/features/assets/AssetRegistryPage.vue')
+const AssetLifecyclePage = () => import('@/features/assets/AssetLifecyclePage.vue')
 const CrudDeletePage = () => import('@/features/crud/CrudDeletePage.vue')
 const CrudFormPage = () => import('@/features/crud/CrudFormPage.vue')
 const WorkflowActionPage = () => import('@/features/crud/WorkflowActionPage.vue')
@@ -42,6 +43,14 @@ const router = createRouter({
       meta: {
         title: 'Asset Registry',
         description: 'Pusat data asset dengan quick filters, search, pagination, dan persiapan menuju detail hub per asset.',
+      },
+    },
+    {
+      path: '/assets/:assetId/lifecycle',
+      component: AssetLifecyclePage,
+      meta: {
+        title: 'Asset Lifecycle',
+        description: 'Overview, review history, replacement planning, retirement, dan finance lifecycle placeholder per asset.',
       },
     },
     {

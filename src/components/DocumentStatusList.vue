@@ -2,13 +2,8 @@
 import BaseIcon from '@/components/BaseIcon.vue'
 import type { DocumentReference } from '@/types/app'
 
-const props = defineProps<{
+defineProps<{
   documents: DocumentReference[]
-  activeDocumentId?: string | null
-}>()
-
-const emit = defineEmits<{
-  preview: [document: DocumentReference]
 }>()
 
 const kindTone: Record<string, string> = {
@@ -23,12 +18,7 @@ const kindTone: Record<string, string> = {
     <div
       v-for="item in documents"
       :key="item.id"
-      class="rounded-[22px] border p-4 transition"
-      :class="
-        item.id === props.activeDocumentId
-          ? 'border-sky-300 bg-sky-50/70 shadow-[0_20px_50px_-35px_rgba(14,165,233,0.85)] dark:border-sky-500/30 dark:bg-sky-500/10'
-          : 'border-slate-200/80 bg-slate-50/80 dark:border-white/10 dark:bg-slate-950/40'
-      "
+      class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40"
     >
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
@@ -48,15 +38,6 @@ const kindTone: Record<string, string> = {
         </div>
 
         <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <button
-            v-if="item.href"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-sky-500/40 dark:hover:text-sky-200"
-            @click="emit('preview', item)"
-          >
-            <BaseIcon name="Eye" :size="14" />
-            View
-          </button>
           <a
             v-if="item.href"
             :href="item.href"
