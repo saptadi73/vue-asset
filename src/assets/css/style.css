@@ -1,0 +1,29 @@
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/montserrat/600.css";
+@import "@fontsource/montserrat/700.css";
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  font-family: "Poppins", sans-serif;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+body {
+  min-width: 320px;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: "Montserrat", sans-serif;
+}
