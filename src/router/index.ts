@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { hasActiveSession } from '@/services/session'
 
+const LoginPage = () => import('@/features/auth/LoginPage.vue')
 const DashboardPage = () => import('@/features/dashboard/DashboardPage.vue')
 const AssetRegistryPage = () => import('@/features/assets/AssetRegistryPage.vue')
 const AssetLifecyclePage = () => import('@/features/assets/AssetLifecyclePage.vue')
@@ -28,6 +30,16 @@ const router = createRouter({
     {
       path: '/',
       redirect: '/dashboard',
+    },
+    {
+      path: '/login',
+      component: LoginPage,
+      meta: {
+        title: 'Login',
+        description: 'Login frontend untuk membentuk sesi bearer token terhadap backend.',
+        layout: 'auth',
+        guestOnly: true,
+      },
     },
     {
       path: '/dashboard',
@@ -61,6 +73,7 @@ const router = createRouter({
         description: 'Halaman create untuk asset registry.',
         crudKey: 'assets',
         crudMode: 'create',
+        requiresAuth: true,
       },
     },
     {
@@ -71,6 +84,7 @@ const router = createRouter({
         description: 'Halaman update untuk asset registry.',
         crudKey: 'assets',
         crudMode: 'edit',
+        requiresAuth: true,
       },
     },
     {
@@ -80,6 +94,7 @@ const router = createRouter({
         title: 'Delete Asset',
         description: 'Konfirmasi delete untuk asset registry.',
         crudKey: 'assets',
+        requiresAuth: true,
       },
     },
     {
@@ -98,6 +113,7 @@ const router = createRouter({
         description: 'Halaman create untuk asset transfer.',
         crudKey: 'transfers',
         crudMode: 'create',
+        requiresAuth: true,
       },
     },
     {
@@ -108,6 +124,7 @@ const router = createRouter({
         description: 'Halaman update untuk asset transfer.',
         crudKey: 'transfers',
         crudMode: 'edit',
+        requiresAuth: true,
       },
     },
     {
@@ -117,6 +134,7 @@ const router = createRouter({
         title: 'Delete Transfer',
         description: 'Konfirmasi delete untuk transfer.',
         crudKey: 'transfers',
+        requiresAuth: true,
       },
     },
     {
@@ -126,6 +144,7 @@ const router = createRouter({
         title: 'Transfer Workflow Action',
         description: 'Halaman command khusus untuk perubahan state transfer.',
         crudKey: 'transfers',
+        requiresAuth: true,
       },
     },
     {
@@ -144,6 +163,7 @@ const router = createRouter({
         description: 'Halaman create untuk lease contract.',
         crudKey: 'leases',
         crudMode: 'create',
+        requiresAuth: true,
       },
     },
     {
@@ -154,6 +174,7 @@ const router = createRouter({
         description: 'Halaman update untuk lease contract.',
         crudKey: 'leases',
         crudMode: 'edit',
+        requiresAuth: true,
       },
     },
     {
@@ -163,6 +184,7 @@ const router = createRouter({
         title: 'Delete Lease',
         description: 'Konfirmasi delete untuk lease contract.',
         crudKey: 'leases',
+        requiresAuth: true,
       },
     },
     {
@@ -181,6 +203,7 @@ const router = createRouter({
         description: 'Halaman create untuk software license.',
         crudKey: 'licenses',
         crudMode: 'create',
+        requiresAuth: true,
       },
     },
     {
@@ -191,6 +214,7 @@ const router = createRouter({
         description: 'Halaman update untuk software license.',
         crudKey: 'licenses',
         crudMode: 'edit',
+        requiresAuth: true,
       },
     },
     {
@@ -200,6 +224,7 @@ const router = createRouter({
         title: 'Delete Software License',
         description: 'Konfirmasi delete untuk software license.',
         crudKey: 'licenses',
+        requiresAuth: true,
       },
     },
     {
@@ -208,6 +233,7 @@ const router = createRouter({
       meta: {
         title: 'Tracking & Stocktake',
         description: 'Pelacakan scan, verifikasi lokasi, dan sesi stocktake yang mengacu pada endpoint tracking dan stocktake backend.',
+        requiresAuth: true,
       },
     },
     {
@@ -218,6 +244,7 @@ const router = createRouter({
         description: 'Halaman create untuk stocktake session.',
         crudKey: 'tracking',
         crudMode: 'create',
+        requiresAuth: true,
       },
     },
     {
@@ -228,6 +255,7 @@ const router = createRouter({
         description: 'Halaman update untuk stocktake session.',
         crudKey: 'tracking',
         crudMode: 'edit',
+        requiresAuth: true,
       },
     },
     {
@@ -237,6 +265,7 @@ const router = createRouter({
         title: 'Delete Stocktake Session',
         description: 'Konfirmasi delete untuk stocktake session.',
         crudKey: 'tracking',
+        requiresAuth: true,
       },
     },
     {
@@ -255,6 +284,7 @@ const router = createRouter({
         description: 'Halaman create untuk maintenance request.',
         crudKey: 'maintenance',
         crudMode: 'create',
+        requiresAuth: true,
       },
     },
     {
@@ -265,6 +295,7 @@ const router = createRouter({
         description: 'Halaman update untuk maintenance request.',
         crudKey: 'maintenance',
         crudMode: 'edit',
+        requiresAuth: true,
       },
     },
     {
@@ -274,6 +305,7 @@ const router = createRouter({
         title: 'Delete Maintenance Request',
         description: 'Konfirmasi delete untuk maintenance request.',
         crudKey: 'maintenance',
+        requiresAuth: true,
       },
     },
     {
@@ -364,6 +396,7 @@ const router = createRouter({
         description: 'Halaman create untuk master data.',
         crudKey: 'masterData',
         crudMode: 'create',
+        requiresAuth: true,
       },
     },
     {
@@ -374,6 +407,7 @@ const router = createRouter({
         description: 'Halaman update untuk master data.',
         crudKey: 'masterData',
         crudMode: 'edit',
+        requiresAuth: true,
       },
     },
     {
@@ -383,9 +417,25 @@ const router = createRouter({
         title: 'Delete Master Record',
         description: 'Konfirmasi delete untuk master data.',
         crudKey: 'masterData',
+        requiresAuth: true,
       },
     },
   ],
+})
+
+router.beforeEach((to) => {
+  const isAuthenticated = hasActiveSession()
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return {
+      path: '/login',
+      query: {
+        redirect: to.fullPath,
+      },
+    }
+  }
+
+  return true
 })
 
 export default router

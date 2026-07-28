@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 import { appConfig } from '@/config/env'
 import { navigationGroups } from '@/config/navigation'
+import { logoutSession } from '@/services/auth'
+import { getSessionUser, hasActiveSession, sessionChangedEvent } from '@/services/session'
 
 import BaseIcon from './BaseIcon.vue'
 import ThemeToggle from './ThemeToggle.vue'
@@ -15,12 +17,30 @@ const isDesktopSidebarCollapsed = ref(false)
 const expandedGroups = ref<Record<string, boolean>>(
   Object.fromEntries(navigationGroups.map((group, index) => [group.id, index < 2])),
 )
+const sessionSummary = ref({
+  isAuthenticated: false,
+  name: 'Guest',
+  subtitle: 'Belum login',
+})
 
 const pageTitle = computed(() => String(route.meta.title || 'Dashboard'))
+const isAuthLayout = computed(() => route.meta.layout === 'auth')
 const currentSectionLabel = computed(() => {
   const group = navigationGroups.find((item) => item.items.some((entry) => entry.to === route.path))
   return group?.label || 'Workspace'
 })
+
+const syncSessionSummary = () => {
+  const user = getSessionUser()
+  const displayName = user?.full_name || user?.name || user?.email || 'System Admin'
+  const subtitle = user?.role || user?.roles?.[0] || user?.email || 'Backend session aktif'
+
+  sessionSummary.value = {
+    isAuthenticated: hasActiveSession(),
+    name: displayName,
+    subtitle: hasActiveSession() ? subtitle : 'Belum login',
+  }
+}
 
 const setTheme = (dark: boolean) => {
   isDark.value = dark
@@ -40,6 +60,10 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
 }
 
+const handleLogout = async () => {
+  await logoutSession()
+}
+
 watch(
   () => route.fullPath,
   () => {
@@ -51,15 +75,23 @@ onMounted(() => {
   const storedTheme = localStorage.getItem('asset-hub-theme')
   if (storedTheme) {
     setTheme(storedTheme === 'dark')
-    return
+  } else {
+    setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches)
   }
 
-  setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches)
+  syncSessionSummary()
+  window.addEventListener(sessionChangedEvent, syncSessionSummary)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(sessionChangedEvent, syncSessionSummary)
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-[linear-gradient(180deg,#eef6ff_0%,#f8fafc_34%,#f8fafc_100%)] text-slate-900 transition dark:bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.16),_transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] dark:text-slate-100">
+  <RouterView v-if="isAuthLayout" />
+
+  <div v-else class="min-h-screen bg-[linear-gradient(180deg,#eef6ff_0%,#f8fafc_34%,#f8fafc_100%)] text-slate-900 transition dark:bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.16),_transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] dark:text-slate-100">
     <div class="absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_38%),radial-gradient(circle_at_top_right,_rgba(244,114,182,0.12),_transparent_28%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.22),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(45,212,191,0.16),_transparent_26%)]" />
 
     <div class="relative mx-auto flex min-h-screen max-w-[1640px] gap-5 px-3 py-3 md:px-4 lg:px-5">
@@ -265,15 +297,32 @@ onMounted(() => {
                 <span class="rounded-full bg-slate-100 px-2 py-1 text-[11px] dark:bg-slate-800">/</span>
               </div>
               <ThemeToggle :is-dark="isDark" @toggle="toggleTheme" />
-              <div class="hidden rounded-full border border-slate-200 bg-white/85 p-1 md:flex dark:border-white/10 dark:bg-slate-900/70">
+              <RouterLink
+                v-if="!sessionSummary.isAuthenticated"
+                to="/login"
+                class="hidden items-center gap-2 rounded-full border border-slate-950 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 md:inline-flex dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500"
+              >
+                <BaseIcon name="LogIn" :size="16" />
+                Login
+              </RouterLink>
+
+              <div v-else class="hidden rounded-full border border-slate-200 bg-white/85 p-1 md:flex dark:border-white/10 dark:bg-slate-900/70">
                 <div class="flex items-center gap-3 rounded-full px-2 py-1">
                   <div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-                    GR
+                    {{ sessionSummary.name.slice(0, 2).toUpperCase() }}
                   </div>
                   <div class="pr-2">
-                    <p class="text-sm font-medium text-slate-800 dark:text-slate-100">System Admin</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Superuser session</p>
+                    <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ sessionSummary.name }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ sessionSummary.subtitle }}</p>
                   </div>
+                  <button
+                    type="button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-rose-400 hover:text-rose-700 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-200"
+                    title="Logout"
+                    @click="handleLogout"
+                  >
+                    <BaseIcon name="LogOut" :size="16" />
+                  </button>
                 </div>
               </div>
             </div>

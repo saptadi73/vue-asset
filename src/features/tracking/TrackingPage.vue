@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { ApexOptions } from 'apexcharts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 
+import ApiSessionPanel from '@/components/ApiSessionPanel.vue'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
@@ -12,15 +14,21 @@ import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import { deleteCrudRecord } from '@/services/crud'
 import {
+  fetchAssetTrackingTimeline,
   fetchStocktakeSessionDetail,
   fetchStocktakeSessions,
   mapTrackingEventsFromSession,
+  submitTrackingScanBatch,
   submitStocktakeScan,
   submitStocktakeWorkflowAction,
+  type AssetTrackingTimelineResponse,
   type StocktakeStatus,
+  type TrackingBatchFeedback,
   type TrackingScanEvent,
   type TrackingSession,
 } from '@/services/tracking'
+import { getAccessToken } from '@/services/session'
+import { liveSeedIds } from '@/data/liveSeedIds'
 import type { DataTableColumn, DetailGridColumn, MetricCardItem } from '@/types/app'
 import { formatEnumLabel } from '@/utils/formatters'
 
@@ -36,6 +44,24 @@ interface TrackingRow extends Record<string, unknown> {
   target_assets: string
   unmatched: string
   last_scan: string
+}
+
+interface StocktakeResultRow extends Record<string, unknown> {
+  id: string
+  code: string
+  asset: string
+  result: string
+  scanned_at: string
+  notes: string
+}
+
+interface TrackingVerificationRow extends Record<string, unknown> {
+  id: string
+  verified_at: string
+  result: string
+  expected_location: string
+  observed_location: string
+  resolution_status: string
 }
 
 interface BarcodeDetectorLike {
@@ -80,12 +106,56 @@ const expectedAssetColumns: DetailGridColumn[] = [
   { key: 'name', label: 'Asset' },
   { key: 'location', label: 'Location', valueClass: 'text-sm text-slate-500 dark:text-slate-400' },
 ]
+const stocktakeResultColumns: DataTableColumn[] = [
+  { key: 'code', label: 'Code' },
+  { key: 'asset', label: 'Asset' },
+  {
+    key: 'result',
+    label: 'Result',
+    type: 'badge',
+    toneMap: {
+      FOUND: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200',
+      UNEXPECTED: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200',
+      UNKNOWN_TAG: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200',
+      DUPLICATE_TAG: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200',
+    },
+  },
+  { key: 'scanned_at', label: 'Scanned At' },
+]
+const trackingVerificationColumns: DataTableColumn[] = [
+  { key: 'verified_at', label: 'Verified At' },
+  {
+    key: 'result',
+    label: 'Verification Result',
+    type: 'badge',
+    toneMap: {
+      PRESENT_MATCH: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200',
+      LOCATION_MISMATCH: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200',
+      OPEN: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200',
+    },
+  },
+  { key: 'expected_location', label: 'Expected Location' },
+  { key: 'observed_location', label: 'Observed Location' },
+  {
+    key: 'resolution_status',
+    label: 'Resolution',
+    type: 'badge',
+    toneMap: {
+      OPEN: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200',
+      RESOLVED: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200',
+    },
+  },
+]
 
 const rows = ref<TrackingRow[]>([])
+const activeView = ref<'tracking' | 'stocktake'>('stocktake')
 const selectedSessionId = ref('')
 const selectedSessionDetail = ref<TrackingSession | null>(null)
 const scanEvents = ref<TrackingScanEvent[]>([])
-const dataSource = ref<'api' | 'mock'>('mock')
+const trackingTimeline = ref<AssetTrackingTimelineResponse | null>(null)
+const trackingBatchFeedback = ref<TrackingBatchFeedback | null>(null)
+const dataSource = ref<'api'>('api')
+const hasAccessToken = ref(false)
 const loadError = ref('')
 const actionFeedback = ref('')
 const scanFeedback = ref('')
@@ -95,6 +165,7 @@ const isLoading = ref(false)
 const isDetailLoading = ref(false)
 const isActionSubmitting = ref(false)
 const isScanSubmitting = ref(false)
+const isBatchSubmitting = ref(false)
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 const scanState = ref({
@@ -110,6 +181,10 @@ let mediaStream: MediaStream | null = null
 let scanLoopId: number | null = null
 let detector: BarcodeDetectorLike | null = null
 let detailRequestToken = 0
+
+const syncAccessTokenState = () => {
+  hasAccessToken.value = Boolean(getAccessToken().trim())
+}
 
 const formatDateTime = (value: string | null) => {
   if (!value) return '-'
@@ -179,6 +254,7 @@ const syncSelectedDetail = (session: TrackingSession) => {
 
 const loadSessionDetail = async (sessionId: string) => {
   if (!sessionId) return
+  if (!hasAccessToken.value) return
 
   const requestToken = ++detailRequestToken
   isDetailLoading.value = true
@@ -188,7 +264,6 @@ const loadSessionDetail = async (sessionId: string) => {
 
     if (requestToken !== detailRequestToken) return
 
-    dataSource.value = response.source
     syncSelectedDetail(response.item)
     upsertRow(response.item)
   } catch (error) {
@@ -202,12 +277,16 @@ const loadSessionDetail = async (sessionId: string) => {
 }
 
 const loadSessions = async () => {
+  if (!hasAccessToken.value) {
+    loadError.value = 'Bearer token diperlukan. Simpan access token terlebih dahulu agar halaman tracking dan stocktake bisa mengambil data backend.'
+    return
+  }
+
   isLoading.value = true
   loadError.value = ''
 
   try {
     const response = await fetchStocktakeSessions()
-    dataSource.value = response.source
     rows.value = response.items.map(mapSessionToRow)
 
     if (!rows.value.length) {
@@ -224,6 +303,19 @@ const loadSessions = async () => {
     loadError.value = error instanceof Error ? error.message : 'Daftar stocktake tidak bisa dimuat.'
   } finally {
     isLoading.value = false
+  }
+}
+
+const loadTrackingTimeline = async () => {
+  if (!hasAccessToken.value) {
+    loadError.value = 'Bearer token diperlukan. Simpan access token terlebih dahulu agar tracking timeline bisa mengambil data backend.'
+    return
+  }
+
+  try {
+    trackingTimeline.value = await fetchAssetTrackingTimeline(liveSeedIds.asset_id)
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'Tracking timeline tidak bisa dimuat.'
   }
 }
 
@@ -309,6 +401,48 @@ const expectedAssetRows = computed(() => {
     location: selectedSession.value?.locationName || item.expected_location?.location_name || '-',
   }))
 })
+const stocktakeResultRows = computed<StocktakeResultRow[]>(() => {
+  if (!selectedSession.value?.results?.length) return []
+
+  return selectedSession.value.results.map((item) => ({
+    id: item.id || `${item.asset?.asset_code || item.asset?.tag_number || 'result'}-${item.created_at || 'now'}`,
+    code: item.asset?.tag_number || item.asset?.asset_code || '-',
+    asset: item.asset?.asset_name || item.asset?.asset_code || 'Unknown asset',
+    result: String(item.result_type || '-'),
+    scanned_at: formatDateTime(item.created_at || null),
+    notes: item.notes || '-',
+  }))
+})
+const trackingVerificationRows = computed<TrackingVerificationRow[]>(() =>
+  (trackingTimeline.value?.verifications || []).map((item) => ({
+    id: item.id,
+    verified_at: formatDateTime(item.verifiedAt),
+    result: item.result,
+    expected_location: item.expectedLocation,
+    observed_location: item.observedLocation,
+    resolution_status: item.resolutionStatus,
+  })),
+)
+const discrepancyCards = [
+  {
+    title: 'Location Discrepancies',
+    value: 'Review mismatched asset location and open resolution actions.',
+    to: '/reports/tracking-verification',
+    icon: 'MapPinned',
+  },
+  {
+    title: 'Missing Assets',
+    value: 'Open missing asset watchlist from the latest stocktake sessions.',
+    to: '/reports/tracking-verification',
+    icon: 'PackageX',
+  },
+  {
+    title: 'Unverified Aging',
+    value: 'Audit unverified items and escalation backlog by age bucket.',
+    to: '/reports/tracking-verification',
+    icon: 'ClockAlert',
+  },
+] as const
 
 const verificationMixSeries = computed(() => {
   if (!selectedSession.value) return [0, 0, 0]
@@ -360,10 +494,7 @@ const submitDetectedCode = async (rawCode: string) => {
     })
 
     scanState.value.lastCode = normalized
-    scanFeedback.value =
-      response.source === 'api'
-        ? `Scan ${normalized} berhasil dikirim ke backend.`
-        : `Scan ${normalized} masuk ke mode mock frontend.`
+    scanFeedback.value = `Scan ${normalized} berhasil dikirim ke backend.`
 
     scanEvents.value = [response.event, ...scanEvents.value.filter((item) => item.id !== response.event.id)].slice(0, 10)
     await loadSessionDetail(session.id)
@@ -481,10 +612,7 @@ const handleWorkflowAction = async (actionKey: 'start' | 'complete' | 'approve')
     const response = await submitStocktakeWorkflowAction(selectedSession.value.id, actionKey, workflowNote.value || undefined)
     syncSelectedDetail(response.item)
     upsertRow(response.item)
-    actionFeedback.value =
-      response.source === 'api'
-        ? `Workflow ${actionKey} berhasil dijalankan ke backend.`
-        : `Workflow ${actionKey} dijalankan dalam mode mock frontend.`
+    actionFeedback.value = `Workflow ${actionKey} berhasil dijalankan ke backend.`
     workflowNote.value = ''
   } catch (error) {
     actionFeedback.value = error instanceof Error ? error.message : 'Workflow action gagal dijalankan.'
@@ -493,8 +621,43 @@ const handleWorkflowAction = async (actionKey: 'start' | 'complete' | 'approve')
   }
 }
 
+const runBatchScan = async () => {
+  if (!hasAccessToken.value) {
+    loadError.value = 'Bearer token diperlukan sebelum menjalankan batch scan ke backend.'
+    return
+  }
+
+  isBatchSubmitting.value = true
+  loadError.value = ''
+
+  try {
+    trackingBatchFeedback.value = await submitTrackingScanBatch({
+      rawTagUid: liveSeedIds.asset_tag_number,
+      scannedLocationId: liveSeedIds.origin_location_id,
+    })
+    await loadTrackingTimeline()
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'Batch scan feedback tidak bisa dimuat dari backend.'
+  } finally {
+    isBatchSubmitting.value = false
+  }
+}
+
 const handleDeleteTracking = async (row: Record<string, unknown>) => {
   await deleteCrudRecord(crudConfig, String(row.id))
+}
+
+const reloadBackendData = async () => {
+  syncAccessTokenState()
+
+  if (!hasAccessToken.value) {
+    loadError.value =
+      'Bearer token diperlukan. Simpan access token terlebih dahulu agar halaman tracking dan stocktake bisa mengambil data backend.'
+    return
+  }
+
+  loadError.value = ''
+  await Promise.all([loadSessions(), loadTrackingTimeline()])
 }
 
 watch(selectedSessionId, async (nextId, previousId) => {
@@ -507,7 +670,7 @@ watch(selectedSessionId, async (nextId, previousId) => {
 })
 
 onMounted(async () => {
-  await loadSessions()
+  await reloadBackendData()
 })
 
 onBeforeUnmount(() => {
@@ -517,23 +680,182 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="space-y-8">
+    <div v-if="!hasAccessToken" class="grid gap-6 xl:grid-cols-[1.2fr_0.9fr]">
+      <SectionCard title="Bearer Token Diperlukan" description="Halaman Tracking & Stocktake sekarang berjalan langsung ke backend, jadi access token wajib tersedia.">
+        <div class="rounded-[24px] border border-amber-200 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10">
+          <p class="text-sm leading-6 text-amber-900 dark:text-amber-100">
+            Simpan `access token` hasil `POST /api/v1/auth/login`, lalu klik tombol reload di bawah ini untuk mengambil data tracking dan stocktake dari backend.
+          </p>
+
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-full border border-slate-950 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500"
+              @click="void reloadBackendData()"
+            >
+              <BaseIcon name="RefreshCw" :size="15" />
+              Reload After Save
+            </button>
+          </div>
+        </div>
+      </SectionCard>
+
+      <ApiSessionPanel />
+    </div>
+
     <div
-      v-if="dataSource === 'mock' || loadError"
-      class="rounded-[24px] border px-4 py-3 text-sm"
-      :class="
-        loadError
-          ? 'border-rose-200 bg-rose-50/80 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200'
-          : 'border-sky-200 bg-sky-50/80 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'
-      "
+      v-if="loadError"
+      class="rounded-[24px] border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
     >
-      {{ loadError || 'Halaman tracking sedang memakai fallback mock agar frontend tetap bisa dikembangkan saat backend atau token belum aktif.' }}
+      {{ loadError }}
     </div>
 
     <section class="grid gap-4 lg:grid-cols-3">
       <MetricCard v-for="item in metrics" :key="item.title" :item="item" />
     </section>
 
-    <section class="space-y-6">
+    <section class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
+        :class="
+          activeView === 'tracking'
+            ? 'border-slate-950 bg-slate-950 text-white dark:border-sky-600 dark:bg-sky-600'
+            : 'border-slate-200/80 bg-slate-50/80 text-slate-600 hover:border-sky-300 hover:text-sky-700 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-sky-500/20 dark:hover:text-sky-200'
+        "
+        @click="activeView = 'tracking'"
+      >
+        Tracking Timeline
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
+        :class="
+          activeView === 'stocktake'
+            ? 'border-slate-950 bg-slate-950 text-white dark:border-sky-600 dark:bg-sky-600'
+            : 'border-slate-200/80 bg-slate-50/80 text-slate-600 hover:border-sky-300 hover:text-sky-700 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-sky-500/20 dark:hover:text-sky-200'
+        "
+        @click="activeView = 'stocktake'"
+      >
+        Stocktake
+      </button>
+    </section>
+
+    <section v-if="activeView === 'tracking'" class="space-y-6">
+      <SectionCard
+        :title="trackingTimeline ? `${trackingTimeline.assetCode} - ${trackingTimeline.assetName}` : 'Tracking Timeline'"
+        description="Timeline scan asset, verification list, dan batch scan feedback langsung dari endpoint backend."
+      >
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
+            <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Scan Activity</p>
+            <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+              <p><span class="font-medium">Total Scans:</span> {{ trackingTimeline?.scans.length || 0 }}</p>
+              <p><span class="font-medium">Batch Scans:</span> {{ trackingTimeline?.scans.filter((item) => item.isBatch).length || 0 }}</p>
+              <p><span class="font-medium">Source:</span> {{ dataSource }}</p>
+            </div>
+          </div>
+
+          <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
+            <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Verification</p>
+            <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+              <p><span class="font-medium">Verifications:</span> {{ trackingTimeline?.verifications.length || 0 }}</p>
+              <p><span class="font-medium">Open:</span> {{ trackingTimeline?.verifications.filter((item) => item.resolutionStatus === 'OPEN').length || 0 }}</p>
+              <p><span class="font-medium">Last Event:</span> {{ trackingTimeline?.scans[0] ? formatDateTime(trackingTimeline.scans[0].time) : '-' }}</p>
+            </div>
+          </div>
+
+          <DetailHighlightCard
+            eyebrow="Batch Scan Feedback"
+            :status-label="trackingBatchFeedback?.source || 'api'"
+            :note="trackingBatchFeedback?.message || 'Jalankan sample batch scan untuk mengambil feedback langsung dari backend.'"
+            icon="ScanLine"
+            tone="border-sky-200 bg-sky-50/80 dark:border-sky-500/20 dark:bg-sky-500/10"
+            badge-tone="bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200"
+          />
+        </div>
+
+        <div class="mt-4 flex justify-end">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-full border border-slate-950 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500"
+            :disabled="isBatchSubmitting"
+            @click="runBatchScan"
+          >
+            <BaseIcon :name="isBatchSubmitting ? 'LoaderCircle' : 'ScanSearch'" :size="16" :class="isBatchSubmitting ? 'animate-spin' : ''" />
+            {{ isBatchSubmitting ? 'Running Batch...' : 'Run Sample Batch' }}
+          </button>
+        </div>
+      </SectionCard>
+
+      <div class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <SectionCard title="Tracking Scan Timeline" description="Riwayat scan dari asset tracking timeline, termasuk source dan match status.">
+          <div v-if="trackingTimeline?.scans.length" class="space-y-3">
+            <div
+              v-for="scan in trackingTimeline.scans"
+              :key="scan.id"
+              class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ scan.code }}</p>
+                  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ scan.asset }}</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <span class="rounded-full bg-slate-200/80 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ scan.type }}</span>
+                  <span class="rounded-full bg-sky-500/15 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-400/20 dark:text-sky-200">{{ scan.matchStatus }}</span>
+                </div>
+              </div>
+              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {{ scan.location }} · {{ scan.source }}{{ scan.isBatch ? ' · batch' : '' }}
+              </p>
+              <p class="mt-2 text-xs font-medium tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
+                {{ formatDateTime(scan.time) }}
+              </p>
+            </div>
+          </div>
+          <div v-else class="rounded-[22px] border border-dashed border-slate-200/80 bg-slate-50/70 px-4 py-5 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950/30 dark:text-slate-400">
+            Belum ada timeline tracking yang bisa ditampilkan.
+          </div>
+        </SectionCard>
+
+        <DataTable
+          title="Verification List"
+          description="Expected vs observed location serta resolution status hasil verifikasi."
+          :rows="trackingVerificationRows"
+          :columns="trackingVerificationColumns"
+          search-placeholder="Cari verification result atau lokasi..."
+          :search-keys="['result', 'expected_location', 'observed_location', 'resolution_status']"
+          :page-size="4"
+        />
+      </div>
+
+      <SectionCard title="Verification Dashboard" description="Shortcut ke discrepancy dashboard untuk Flow C: location discrepancies, missing assets, dan unverified assets.">
+        <div class="grid gap-3 md:grid-cols-3">
+          <RouterLink
+            v-for="item in discrepancyCards"
+            :key="item.title"
+            :to="item.to"
+            class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:hover:border-sky-500/20"
+          >
+            <div class="flex items-start gap-3">
+              <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
+                <BaseIcon :name="item.icon" :size="18" />
+              </span>
+              <div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ item.title }}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ item.value }}</p>
+                <p class="mt-3 text-xs font-semibold tracking-[0.18em] text-sky-600 uppercase dark:text-sky-300">
+                  Open Dashboard
+                </p>
+              </div>
+            </div>
+          </RouterLink>
+        </div>
+      </SectionCard>
+    </section>
+
+    <section v-else class="space-y-6">
       <DataTable
         title="Stocktake Sessions"
         :rows="rows"
@@ -672,7 +994,7 @@ onBeforeUnmount(() => {
 
                 <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-slate-950/40">
                   <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-sm font-semibold text-slate-900 dark:text-white">Manual scan fallback</p>
+                    <p class="text-sm font-semibold text-slate-900 dark:text-white">Manual scan input</p>
                     <span class="rounded-full bg-slate-200/80 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                       {{ selectedSession.locationName }}
                     </span>
@@ -718,6 +1040,16 @@ onBeforeUnmount(() => {
                 empty-message="Snapshot expected asset belum tersedia atau backend belum mengembalikan daftar expected items untuk sesi ini."
               />
             </SectionCard>
+
+            <DataTable
+              title="Results Table"
+              description="Hasil scan stocktake untuk sesi terpilih, sesuai rekomendasi mock guide."
+              :rows="stocktakeResultRows"
+              :columns="stocktakeResultColumns"
+              search-placeholder="Cari code, asset, atau result..."
+              :search-keys="['code', 'asset', 'result', 'notes']"
+              :page-size="5"
+            />
           </div>
 
           <div class="space-y-6">
@@ -805,6 +1137,18 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </template>
+
+      <SectionCard title="Discrepancy Dashboard" description="Buka report verification untuk melihat discrepancy, missing assets, dan unverified aging dari hasil stocktake.">
+        <div class="flex flex-wrap gap-3">
+          <RouterLink
+            to="/reports/tracking-verification"
+            class="inline-flex items-center gap-2 rounded-full border border-slate-950 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500"
+          >
+            <BaseIcon name="ArrowRight" :size="15" />
+            Open Verification Dashboard
+          </RouterLink>
+        </div>
+      </SectionCard>
     </section>
   </div>
 </template>
