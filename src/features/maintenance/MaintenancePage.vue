@@ -6,12 +6,14 @@ import { RouterLink } from 'vue-router'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailGridTable from '@/components/DetailGridTable.vue'
 import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
+import DocumentStatusList from '@/components/DocumentStatusList.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import { deleteCrudRecord } from '@/services/crud'
-import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, DetailGridColumn, DocumentReference, MetricCardItem } from '@/types/app'
 import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('maintenance')!
@@ -32,6 +34,7 @@ interface MaintenanceRow extends Record<string, unknown> {
   symptom: string
   triage_note: string
   next_step: string
+  maintenance_contract: string
 }
 
 const crudStatusTone: Record<MaintenanceRow['status'], string> = {
@@ -107,6 +110,11 @@ const trendSeries = [
   { name: 'Open Requests', data: [18, 24, 16, 21] },
   { name: 'Completed Work Orders', data: [12, 17, 19, 23] },
 ]
+const executionDetailColumns: DetailGridColumn[] = [
+  { key: 'label', label: 'Stage', valueClass: 'text-sm font-semibold text-slate-900 dark:text-white' },
+  { key: 'value', label: 'Value' },
+  { key: 'note', label: 'Context', valueClass: 'text-sm text-slate-500 dark:text-slate-400' },
+]
 
 const requestColumns: DataTableColumn[] = [
   { key: 'request_no', label: 'Request No.' },
@@ -152,6 +160,7 @@ const requestRows: MaintenanceRow[] = [
     symptom: 'Mesin berhenti saat beban > 60% dan muncul bunyi getar abnormal.',
     triage_note: 'Butuh validasi bearing dan kemungkinan vendor field visit.',
     next_step: 'Triage and assign',
+    maintenance_contract: 'MC-2026-014',
   },
   {
     id: 2,
@@ -169,6 +178,7 @@ const requestRows: MaintenanceRow[] = [
     symptom: 'Paper jam berulang setelah 20 lembar print.',
     triage_note: 'Assigned ke office support, spare roller sedang disiapkan.',
     next_step: 'Field execution',
+    maintenance_contract: '',
   },
   {
     id: 3,
@@ -186,6 +196,7 @@ const requestRows: MaintenanceRow[] = [
     symptom: 'Video stream putus dan packet loss naik signifikan.',
     triage_note: 'Internal team menangani switch port, vendor standby untuk kamera replacement.',
     next_step: 'Vendor standby and verification',
+    maintenance_contract: '',
   },
   {
     id: 4,
@@ -203,6 +214,7 @@ const requestRows: MaintenanceRow[] = [
     symptom: 'Minor fuel sensor fluctuation.',
     triage_note: 'Work order selesai dan sensor sudah dikalibrasi ulang.',
     next_step: 'Closed',
+    maintenance_contract: '',
   },
   {
     id: 5,
@@ -220,6 +232,7 @@ const requestRows: MaintenanceRow[] = [
     symptom: 'Suhu ruangan tidak turun dan airflow sangat lemah.',
     triage_note: 'Vendor scheduled siang ini, unit butuh coil cleaning dan refrigerant check.',
     next_step: 'Vendor visit scheduled',
+    maintenance_contract: 'MC-2026-014',
   },
 ]
 
@@ -239,6 +252,51 @@ const defaultSelectedRequest = requestRows[0]!
 const selectedRequest = computed<MaintenanceRow>(
   () => requestRows.find((item) => String(item.id) === selectedRequestId.value) ?? defaultSelectedRequest,
 )
+
+const maintenanceContractDocuments = computed<DocumentReference[]>(() => {
+  const documentMap: Record<string, DocumentReference[]> = {
+    'MC-2026-002': [
+      {
+        id: 'maintenance-contract-mc-2026-002',
+        label: 'Maintenance Contract',
+        fileName: 'MC-2026-002-contract.txt',
+        href: '/documents/contracts/MC-2026-002-contract.txt',
+        note: 'Dokumen kontrak maintenance fleet service dengan SLA response 48 jam.',
+        kind: 'contract',
+      },
+    ],
+    'MC-2026-014': [
+      {
+        id: 'maintenance-contract-mc-2026-014',
+        label: 'Maintenance Contract',
+        fileName: 'MC-2026-014-contract.txt',
+        href: '/documents/contracts/MC-2026-014-contract.txt',
+        note: 'Dokumen corrective support dan cakupan spare part vendor.',
+        kind: 'contract',
+      },
+    ],
+  }
+
+  if (!selectedRequest.value.maintenance_contract) {
+    return [
+      {
+        id: `maintenance-contract-${selectedRequest.value.request_no}`,
+        label: 'Maintenance Contract',
+        note: 'Tidak ada dokumen kontrak maintenance untuk request ini.',
+        kind: 'contract',
+      },
+    ]
+  }
+
+  return documentMap[selectedRequest.value.maintenance_contract] ?? [
+    {
+      id: `maintenance-contract-${selectedRequest.value.maintenance_contract}`,
+      label: 'Maintenance Contract',
+      note: 'Tidak ada dokumen kontrak maintenance untuk request ini.',
+      kind: 'contract',
+    },
+  ]
+})
 
 const requestLifecycleRows = computed(() => [
   { label: 'Current Step', value: selectedRequest.value.next_step, note: 'Posisi request saat ini di workflow maintenance' },
@@ -436,17 +494,7 @@ const handleDeleteMaintenance = async (row: Record<string, unknown>) => {
 
       <div class="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
         <SectionCard title="Execution Detail">
-          <div class="overflow-hidden rounded-3xl border border-slate-200/80 dark:border-white/10">
-            <div
-              v-for="row in requestLifecycleRows"
-              :key="row.label"
-              class="grid gap-2 border-b border-slate-200/70 bg-white/80 px-4 py-4 last:border-b-0 dark:border-white/8 dark:bg-slate-900/50 md:grid-cols-[0.9fr_0.8fr_1.3fr]"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ row.label }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ row.value }}</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">{{ row.note }}</p>
-            </div>
-          </div>
+          <DetailGridTable :columns="executionDetailColumns" :rows="requestLifecycleRows" desktop-grid-class="md:grid-cols-[0.9fr_0.8fr_1.3fr] gap-2" row-key="label" />
         </SectionCard>
 
         <div class="space-y-6">
@@ -466,6 +514,10 @@ const handleDeleteMaintenance = async (row: Record<string, unknown>) => {
                 <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ row.note }}</p>
               </div>
             </div>
+          </SectionCard>
+
+          <SectionCard title="Contract Documents" description="Dokumen kontrak maintenance yang terkait dengan request ini.">
+            <DocumentStatusList :documents="maintenanceContractDocuments" />
           </SectionCard>
 
           <SectionCard title="Next State Action">

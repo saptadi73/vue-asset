@@ -1,0 +1,10 @@
+Maintenance Contract Summary
+
+Contract No: MC-2026-002
+Coverage: Fleet maintenance service
+Vendor: PT Astra Mobility
+
+Highlights:
+- Response SLA 48 hours
+- Preventive service scope
+- Corrective escalation path

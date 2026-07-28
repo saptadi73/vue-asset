@@ -29,6 +29,30 @@ export interface MetricCardItem {
   tone: string
 }
 
+export interface RelatedActionItem {
+  label: string
+  to: string
+  icon: string
+  tone?: 'primary' | 'secondary' | 'danger'
+}
+
+export interface DetailGridColumn {
+  key: string
+  label: string
+  align?: 'left' | 'center' | 'right'
+  valueClass?: string
+  mobileLabel?: string
+}
+
+export interface DocumentReference {
+  id: string
+  label: string
+  fileName?: string
+  href?: string
+  note: string
+  kind?: 'manual' | 'contract' | 'support'
+}
+
 export interface NavigationItem {
   label: string
   to: string

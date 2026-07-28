@@ -8,10 +8,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: 'Response SLA', value: '94.2%', detail: 'Persentase response yang masih masuk target SLA.', icon: 'TimerReset', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
-  { title: 'Resolution SLA', value: '88.6%', detail: 'Persentase resolution yang selesai sesuai target akhir.', icon: 'ShieldCheck', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
-  { title: 'Response Breach', value: '12', detail: 'Request yang melewati waktu response yang diizinkan.', icon: 'TriangleAlert', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
-  { title: 'Resolution Breach', value: '7', detail: 'Request atau work order yang melewati target penyelesaian.', icon: 'OctagonAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
+  { title: 'Response SLA', value: '94.2%', detail: 'Masih dalam target.', icon: 'TimerReset', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
+  { title: 'Resolution SLA', value: '88.6%', detail: 'Selesai dalam target.', icon: 'ShieldCheck', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
+  { title: 'Response Breach', value: '12', detail: 'Melewati batas response.', icon: 'TriangleAlert', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: 'Resolution Breach', value: '7', detail: 'Melewati batas penyelesaian.', icon: 'OctagonAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
 ]
 
 const complianceOptions: ApexOptions = {

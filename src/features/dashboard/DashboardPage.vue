@@ -13,56 +13,56 @@ const metrics: MetricCardItem[] = [
   {
     title: 'Active Assets',
     value: '4,982',
-    detail: '3,450 running normal across active locations.',
+    detail: '3,450 berjalan normal.',
     icon: 'Boxes',
     tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200',
   },
   {
     title: 'Abnormal Status',
     value: '214',
-    detail: 'Need review on maintenance, transfer, or retirement.',
+    detail: 'Perlu review lanjutan.',
     icon: 'TriangleAlert',
     tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200',
   },
   {
     title: 'Open Transfers',
     value: '26',
-    detail: '9 waiting approval and 6 pending completion.',
+    detail: '9 menunggu approval.',
     icon: 'ArrowRightLeft',
     tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200',
   },
   {
     title: 'Active Stocktakes',
     value: '7',
-    detail: '2 sessions still waiting approval after recount.',
+    detail: '2 sesi masih pending approval.',
     icon: 'QrCode',
     tone: 'bg-cyan-500/15 text-cyan-700 ring-cyan-400/20 dark:text-cyan-200',
   },
   {
     title: 'Open Requests',
     value: '43',
-    detail: '12 are already overdue against response target.',
+    detail: '12 sudah melewati target response.',
     icon: 'ClipboardList',
     tone: 'bg-orange-500/15 text-orange-700 ring-orange-400/20 dark:text-orange-200',
   },
   {
     title: 'Active Work Orders',
     value: '18',
-    detail: '5 orders are nearing planned end window.',
+    detail: '5 work order mendekati batas akhir.',
     icon: 'Wrench',
     tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200',
   },
   {
     title: 'Unverified Assets',
     value: '41',
-    detail: '7 assets are above the 90-day aging bucket.',
+    detail: '7 asset masuk aging tertinggi.',
     icon: 'ShieldAlert',
     tone: 'bg-red-500/15 text-red-700 ring-red-400/20 dark:text-red-200',
   },
   {
     title: 'Expiry Watch',
     value: '19',
-    detail: 'Contracts and warranties ending within 90 days.',
+    detail: 'Berakhir dalam 90 hari.',
     icon: 'FileWarning',
     tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200',
   },
@@ -72,7 +72,7 @@ const alertItems = [
   {
     title: 'Overdue Requests',
     value: '12',
-    note: 'Perlu triage dan assignment lebih cepat hari ini.',
+    note: 'Perlu triage lebih cepat.',
     icon: 'AlarmClock',
     to: '/maintenance',
     tone: 'border-rose-200 bg-rose-50/85 text-rose-900 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-100',
@@ -81,7 +81,7 @@ const alertItems = [
   {
     title: 'Overdue Work Orders',
     value: '5',
-    note: 'Dominan pada corrective dan breakdown execution.',
+    note: 'Dominan pada corrective dan breakdown.',
     icon: 'Wrench',
     to: '/maintenance',
     tone: 'border-amber-200 bg-amber-50/85 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100',
@@ -90,7 +90,7 @@ const alertItems = [
   {
     title: 'Schedule Instability',
     value: '9',
-    note: 'Ada reschedule berulang yang perlu review planner.',
+    note: 'Ada reschedule yang perlu review.',
     icon: 'CalendarClock',
     to: '/reports',
     tone: 'border-violet-200 bg-violet-50/85 text-violet-900 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-100',
@@ -99,7 +99,7 @@ const alertItems = [
   {
     title: 'Expiring Entitlements',
     value: '19',
-    note: 'Warranty dan maintenance coverage mendekati akhir.',
+    note: 'Coverage mendekati akhir.',
     icon: 'ShieldCheck',
     to: '/leases',
     tone: 'border-emerald-200 bg-emerald-50/85 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-100',
@@ -242,7 +242,7 @@ const drilldownLinks = [
         v-for="item in alertItems"
         :key="item.title"
         :to="item.to"
-        class="rounded-[26px] border p-5 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.45)] transition hover:-translate-y-0.5"
+        class="rounded-[24px] border p-4 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.45)] transition hover:-translate-y-0.5 md:p-5"
         :class="item.tone"
       >
         <div class="flex items-start justify-between gap-4">
@@ -252,7 +252,7 @@ const drilldownLinks = [
             </span>
             <div>
               <p class="text-sm font-semibold">{{ item.title }}</p>
-              <p class="mt-1 text-sm leading-6 opacity-90">{{ item.note }}</p>
+              <p class="mt-1 text-sm leading-5 opacity-90">{{ item.note }}</p>
             </div>
           </div>
           <span :class="['rounded-full px-3 py-1 text-xs font-semibold', item.chipTone]">{{ item.value }}</span>
@@ -305,13 +305,13 @@ const drilldownLinks = [
         :page-size="5"
       />
 
-      <SectionCard title="Quick Drilldown" description="Akses cepat ke domain operasional utama dari landing dashboard.">
+      <SectionCard title="Quick Access" description="Akses cepat ke area utama.">
         <div class="grid gap-3">
           <RouterLink
             v-for="item in drilldownLinks"
             :key="item.label"
             :to="item.to"
-            class="flex items-center justify-between gap-4 rounded-[22px] border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200"
+            class="flex items-center justify-between gap-4 rounded-[20px] border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200"
           >
             <span class="inline-flex items-center gap-3">
               <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
@@ -326,19 +326,19 @@ const drilldownLinks = [
     </section>
 
     <section class="grid gap-6 xl:grid-cols-2 2xl:grid-cols-4">
-      <SectionCard title="Asset Status Distribution" description="Split cepat kondisi status asset dari registry operasional.">
+      <SectionCard title="Asset Status Distribution" description="Split cepat kondisi asset.">
         <BaseChart type="bar" :height="280" :options="statusDistributionOptions" :series="statusDistributionSeries" />
       </SectionCard>
 
-      <SectionCard title="Maintenance Pulse" description="Perbandingan request terbuka dan work order aktif per minggu.">
+      <SectionCard title="Maintenance Pulse" description="Request dan work order aktif per minggu.">
         <BaseChart type="line" :height="280" :options="maintenancePulseOptions" :series="maintenancePulseSeries" />
       </SectionCard>
 
-      <SectionCard title="Verification Aging" description="Bucket aging untuk unverified assets agar prioritas scan lebih jelas.">
+      <SectionCard title="Verification Aging" description="Aging untuk prioritas scan.">
         <BaseChart type="donut" :height="280" :options="verificationAgingOptions" :series="verificationAgingSeries" />
       </SectionCard>
 
-      <SectionCard title="Maintenance Cost Split" description="Komposisi cepat biaya labor, parts, dan vendor dari work order aktif.">
+      <SectionCard title="Maintenance Cost Split" description="Komposisi biaya work order aktif.">
         <BaseChart type="donut" :height="280" :options="costSplitOptions" :series="costSplitSeries" />
       </SectionCard>
     </section>

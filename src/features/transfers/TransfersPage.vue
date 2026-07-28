@@ -6,12 +6,13 @@ import { RouterLink } from 'vue-router'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailGridTable from '@/components/DetailGridTable.vue'
 import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import { deleteCrudRecord } from '@/services/crud'
-import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, DetailGridColumn, MetricCardItem } from '@/types/app'
 import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('transfers')!
@@ -72,6 +73,11 @@ const columns: DataTableColumn[] = [
       COMPLETED: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200',
     },
   },
+]
+const transferItemColumns: DetailGridColumn[] = [
+  { key: 'label', label: 'Field', valueClass: 'text-sm font-semibold text-slate-900 dark:text-white' },
+  { key: 'value', label: 'Value' },
+  { key: 'note', label: 'Note', valueClass: 'text-sm text-slate-500 dark:text-slate-400' },
 ]
 
 const rows: TransferRow[] = [
@@ -379,17 +385,7 @@ const handleDeleteTransfer = async (row: Record<string, unknown>) => {
 
       <div class="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
         <SectionCard title="Transfer Item Detail">
-          <div class="overflow-hidden rounded-3xl border border-slate-200/80 dark:border-white/10">
-            <div
-              v-for="item in transferItemRows"
-              :key="item.label"
-              class="grid gap-2 border-b border-slate-200/70 bg-white/80 px-4 py-4 last:border-b-0 dark:border-white/8 dark:bg-slate-900/50 md:grid-cols-[0.8fr_1.2fr_1.3fr]"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ item.label }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ item.value }}</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">{{ item.note }}</p>
-            </div>
-          </div>
+          <DetailGridTable :columns="transferItemColumns" :rows="transferItemRows" desktop-grid-class="md:grid-cols-[0.8fr_1.2fr_1.3fr] gap-2" row-key="label" />
         </SectionCard>
 
         <div class="space-y-6">

@@ -7,10 +7,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: 'Preventive Share', value: '34%', detail: 'Proporsi preventive work order pada mix aktif.', icon: 'ShieldPlus', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
-  { title: 'Corrective Share', value: '29%', detail: 'Corrective work order yang paling sering mengisi backlog.', icon: 'Wrench', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
-  { title: 'Breakdown Share', value: '21%', detail: 'Porsi breakdown yang layak diawasi untuk reliability.', icon: 'TriangleAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
-  { title: 'Vendor Execution', value: '38%', detail: 'Bagian pekerjaan yang masih banyak bergantung ke vendor.', icon: 'BriefcaseBusiness', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
+  { title: 'Preventive Share', value: '34%', detail: 'Porsi preventive aktif.', icon: 'ShieldPlus', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
+  { title: 'Corrective Share', value: '29%', detail: 'Porsi corrective aktif.', icon: 'Wrench', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: 'Breakdown Share', value: '21%', detail: 'Porsi breakdown aktif.', icon: 'TriangleAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
+  { title: 'Vendor Execution', value: '38%', detail: 'Masih bergantung pada vendor.', icon: 'BriefcaseBusiness', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
 ]
 
 const mixOptions: ApexOptions = {
@@ -54,12 +54,5 @@ const executionSeries = [{ name: 'Work Orders', data: [28, 19, 11] }]
       </SectionCard>
     </section>
 
-    <SectionCard title="Implementation Note" description="Quick win report yang disarankan katalog frontend tanpa perlu endpoint agregat baru.">
-      <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-        <p>Bangun dari kombinasi `GET /api/v1/maintenance/work-orders` dan `GET /api/v1/maintenance/requests`.</p>
-        <p>Tonjolkan preventive vs corrective vs breakdown vs predictive mix, lalu bandingkan execution internal dengan vendor.</p>
-        <p>Report ini cocok dipakai untuk melihat apakah organisasi terlalu reaktif atau sudah cukup sehat di preventive planning.</p>
-      </div>
-    </SectionCard>
   </div>
 </template>

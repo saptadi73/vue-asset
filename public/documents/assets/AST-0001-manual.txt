@@ -1,0 +1,11 @@
+Dell Latitude 7440 Manual Book
+
+Asset Code: AST-0001
+Category: Laptop
+Revision: July 2026
+
+Contents:
+- Device overview
+- Battery care guide
+- Docking and peripheral setup
+- Preventive maintenance checklist

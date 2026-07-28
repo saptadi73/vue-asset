@@ -1,0 +1,10 @@
+Maintenance Contract Summary
+
+Contract No: MC-2026-014
+Coverage: Corrective support
+Vendor: PT Mekar Service Solusi
+
+Highlights:
+- Corrective field service
+- Spare part exception notes
+- Contract end warning monitoring

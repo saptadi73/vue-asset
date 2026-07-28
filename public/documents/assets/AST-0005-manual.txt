@@ -1,0 +1,11 @@
+CCTV Dome Lobby A Manual Book
+
+Asset Code: AST-0005
+Category: Security Device
+Revision: July 2026
+
+Contents:
+- Mounting instructions
+- Network configuration
+- Lens cleaning checklist
+- Preventive inspection notes

@@ -8,10 +8,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: 'Unverified Assets', value: '41', detail: 'Aset yang belum diverifikasi pada window audit aktif.', icon: 'ShieldAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
-  { title: 'Discrepancies', value: '13', detail: 'Mismatch lokasi yang masih butuh investigasi.', icon: 'MapPinned', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
-  { title: 'Missing Assets', value: '5', detail: 'Item yang tidak muncul pada sesi stocktake yang selesai.', icon: 'SearchX', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
-  { title: 'Active Sessions', value: '7', detail: 'Stocktake aktif dan pending approval pada lokasi operasional.', icon: 'QrCode', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
+  { title: 'Unverified Assets', value: '41', detail: 'Belum diverifikasi.', icon: 'ShieldAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
+  { title: 'Discrepancies', value: '13', detail: 'Masih butuh investigasi.', icon: 'MapPinned', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: 'Missing Assets', value: '5', detail: 'Tidak muncul pada stocktake.', icon: 'SearchX', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
+  { title: 'Active Sessions', value: '7', detail: 'Sesi aktif dan pending approval.', icon: 'QrCode', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
 ]
 
 const agingOptions: ApexOptions = {

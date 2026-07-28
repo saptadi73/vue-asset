@@ -8,10 +8,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: '30-Day Window', value: '6', detail: 'Entitlement yang akan berakhir sebelum August 27, 2026.', icon: 'AlarmClock', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
-  { title: '60-Day Window', value: '11', detail: 'Coverage yang butuh review komersial lebih awal.', icon: 'CalendarRange', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
-  { title: '90-Day Window', value: '19', detail: 'Kontrak, warranty, dan support end yang sudah masuk watchlist.', icon: 'ShieldAlert', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
-  { title: 'Top Provider', value: 'PT Mekar Service', detail: 'Provider dengan item expiry terbanyak pada watchlist aktif.', icon: 'Building2', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
+  { title: '30-Day Window', value: '6', detail: 'Berakhir sebelum 27 Aug 2026.', icon: 'AlarmClock', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
+  { title: '60-Day Window', value: '11', detail: 'Perlu review lebih awal.', icon: 'CalendarRange', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: '90-Day Window', value: '19', detail: 'Sudah masuk watchlist.', icon: 'ShieldAlert', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
+  { title: 'Top Provider', value: 'PT Mekar Service', detail: 'Provider dengan expiry terbanyak.', icon: 'Building2', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
 ]
 
 const expiryRows = [

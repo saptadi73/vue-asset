@@ -8,10 +8,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: 'Total Actual Cost', value: 'Rp428 jt', detail: 'Akumulasi labor, part, dan vendor pada periode aktif.', icon: 'BadgeDollarSign', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
-  { title: 'Part Cost', value: 'Rp163 jt', detail: 'Komponen dan spare parts yang sudah dikonsumsi work order.', icon: 'Package', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
-  { title: 'Labor Cost', value: 'Rp124 jt', detail: 'Biaya teknisi internal dan tenaga kerja support.', icon: 'Users', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
-  { title: 'Vendor Cost', value: 'Rp141 jt', detail: 'Biaya pihak ketiga untuk field service dan specialist work.', icon: 'BriefcaseBusiness', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: 'Total Actual Cost', value: 'Rp428 jt', detail: 'Total labor, part, dan vendor.', icon: 'BadgeDollarSign', tone: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200' },
+  { title: 'Part Cost', value: 'Rp163 jt', detail: 'Konsumsi part dan spare part.', icon: 'Package', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
+  { title: 'Labor Cost', value: 'Rp124 jt', detail: 'Biaya teknisi dan support.', icon: 'Users', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
+  { title: 'Vendor Cost', value: 'Rp141 jt', detail: 'Biaya pihak ketiga.', icon: 'BriefcaseBusiness', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
 ]
 
 const costRows = [
@@ -64,27 +64,6 @@ const typeSeries = [{ name: 'Cost (jt)', data: [88, 146, 131, 63] }]
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <SectionCard title="Suggested Filters" description="Filter yang direkomendasikan oleh implementasi plan untuk cost report.">
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm dark:border-white/10 dark:bg-slate-950/40">
-            <p class="font-semibold text-slate-900 dark:text-white">Date Range</p>
-            <p class="mt-2 text-slate-500 dark:text-slate-400">`date_from` / `date_to` untuk periode laporan.</p>
-          </div>
-          <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm dark:border-white/10 dark:bg-slate-950/40">
-            <p class="font-semibold text-slate-900 dark:text-white">Asset Lookup</p>
-            <p class="mt-2 text-slate-500 dark:text-slate-400">`asset_id` untuk fokus ke aset mahal tertentu.</p>
-          </div>
-          <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm dark:border-white/10 dark:bg-slate-950/40">
-            <p class="font-semibold text-slate-900 dark:text-white">Maintenance Type</p>
-            <p class="mt-2 text-slate-500 dark:text-slate-400">`maintenance_type` untuk preventive/corrective/breakdown/predictive.</p>
-          </div>
-          <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm dark:border-white/10 dark:bg-slate-950/40">
-            <p class="font-semibold text-slate-900 dark:text-white">Sort & Order</p>
-            <p class="mt-2 text-slate-500 dark:text-slate-400">Urutkan top expensive work orders dengan `sort` dan `order`.</p>
-          </div>
-        </div>
-      </SectionCard>
-
       <SectionCard title="Cost Split" description="Komposisi aktual part, labor, dan vendor cost.">
         <BaseChart type="donut" :height="300" :options="splitOptions" :series="splitSeries" />
       </SectionCard>

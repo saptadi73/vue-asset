@@ -6,6 +6,7 @@ import ApiEndpointList from '@/components/ApiEndpointList.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import CrudPageShell from '@/components/CrudPageShell.vue'
 import FormField from '@/components/FormField.vue'
+import RelatedActionsPanel from '@/components/RelatedActionsPanel.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import {
@@ -302,38 +303,7 @@ const handleSubmit = async () => {
           title="Related Form Actions"
           description="Aksi relasional dijalankan langsung dari parent form yang sama agar operator bisa melanjutkan proses tanpa keluar konteks."
         >
-          <div class="grid gap-3 md:grid-cols-2">
-            <RouterLink
-              v-for="action in relatedHeaderActions"
-              :key="`${config.key}-${action.label}-inline`"
-              :to="action.to"
-              class="flex items-center justify-between gap-4 rounded-[22px] border px-4 py-3 text-sm font-medium transition hover:-translate-y-0.5"
-              :class="
-                action.tone === 'primary'
-                  ? 'border-slate-950 bg-slate-950 text-white hover:bg-slate-800 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500'
-                  : 'border-slate-200/80 bg-slate-50/80 text-slate-700 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200'
-              "
-            >
-              <span class="inline-flex items-center gap-3">
-                <span
-                  class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
-                  :class="
-                    action.tone === 'primary'
-                      ? 'border-white/20 bg-white/10 text-white'
-                      : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'
-                  "
-                >
-                  <BaseIcon :name="action.icon" :size="16" />
-                </span>
-                {{ action.label }}
-              </span>
-              <BaseIcon
-                name="ArrowRight"
-                :size="16"
-                :class="action.tone === 'primary' ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'"
-              />
-            </RouterLink>
-          </div>
+          <RelatedActionsPanel :actions="relatedHeaderActions" />
         </SectionCard>
 
         <SectionCard

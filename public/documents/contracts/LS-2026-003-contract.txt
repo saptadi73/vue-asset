@@ -1,0 +1,11 @@
+Lease Contract Summary
+
+Contract No: LS-2026-003
+Vendor: PT Rental Teknologi
+Type: IT Device Lease
+Period: 01 Mar 2026 - 28 Feb 2027
+
+Highlights:
+- Device coverage list
+- Replacement window
+- Utilization review clause

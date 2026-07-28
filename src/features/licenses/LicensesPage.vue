@@ -6,13 +6,15 @@ import { RouterLink } from 'vue-router'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailGridTable from '@/components/DetailGridTable.vue'
 import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
+import RelatedActionsPanel from '@/components/RelatedActionsPanel.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import { liveSeedIds } from '@/data/liveSeedIds'
 import { deleteCrudRecord } from '@/services/crud'
-import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, DetailGridColumn, MetricCardItem, RelatedActionItem } from '@/types/app'
 import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('licenses')!
@@ -102,6 +104,22 @@ const assignmentStatusTone: Record<LicenseAssignmentDetail['status'], string> = 
   ACTIVE: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200',
   RELEASED: 'bg-slate-200/80 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700',
 }
+
+const licenseAssignmentColumns: DetailGridColumn[] = [
+  { key: 'target', label: 'Target', valueClass: 'text-sm font-semibold text-slate-900 dark:text-white' },
+  { key: 'assignee_type', label: 'Type' },
+  { key: 'assigned_at', label: 'Assigned' },
+  { key: 'status', label: 'Status' },
+  { key: 'note', label: 'Note', valueClass: 'text-sm leading-6 text-slate-500 dark:text-slate-400' },
+  { key: 'actions', label: 'Actions', align: 'right' },
+]
+
+const seatDetailColumns: DetailGridColumn[] = [
+  { key: 'bucket', label: 'Bucket', valueClass: 'text-sm font-semibold text-slate-900 dark:text-white' },
+  { key: 'qty', label: 'Qty' },
+  { key: 'action', label: 'Action' },
+  { key: 'note', label: 'Note', valueClass: 'text-sm text-slate-500 dark:text-slate-400' },
+]
 
 const rows: LicenseRow[] = [
   {
@@ -193,7 +211,7 @@ const summaryRows = computed(() => [
   { label: 'Renewal Window', value: selectedLicense.value.renewal_window, note: 'Batas waktu review agar tidak terlambat renewal.' },
   { label: 'Seat Policy', value: selectedLicense.value.seat_policy, note: 'Aturan dasar distribusi seat dan release.' },
 ])
-const licenseRelatedActions = computed(() => [
+const licenseRelatedActions = computed<RelatedActionItem[]>(() => [
   {
     label: 'Update License',
     to: `/licenses/${selectedLicense.value.id}/edit`,
@@ -392,79 +410,48 @@ const handleDeleteLicense = async (row: Record<string, unknown>) => {
         @select="selectedLicenseId = String($event.id)"
       />
 
-      <div class="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <SectionCard :title="`${selectedLicense.product} - ${selectedLicense.license_key}`">
-          <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
-              <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">License Scope</p>
-              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
-                <p><span class="font-medium">Vendor:</span> {{ selectedLicense.vendor }}</p>
-                <p><span class="font-medium">Type:</span> {{ selectedLicense.license_type }}</p>
-                <p><span class="font-medium">Expires:</span> {{ selectedLicense.expires_at }}</p>
-              </div>
-            </div>
-
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
-              <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Seat Pulse</p>
-              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
-                <p><span class="font-medium">Seat Usage:</span> {{ selectedLicense.seats }}</p>
-                <p><span class="font-medium">Used:</span> {{ selectedLicense.used_seats }}</p>
-                <p><span class="font-medium">Available:</span> {{ selectedLicense.available_seats }}</p>
-              </div>
-            </div>
-
-            <DetailHighlightCard
-              eyebrow="License Note"
-              :status-label="formatEnumLabel(selectedLicense.status)"
-              :note="selectedLicense.contract_note"
-              icon="KeySquare"
-              :tone="
-                selectedLicense.status === 'ACTIVE'
-                  ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
-                  : selectedLicense.status === 'WARNING'
-                    ? 'border-amber-200 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10'
-                    : 'border-rose-200 bg-rose-50/80 dark:border-rose-500/20 dark:bg-rose-500/10'
-              "
-              :badge-tone="
-                selectedLicense.status === 'ACTIVE'
-                  ? 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
-                  : selectedLicense.status === 'WARNING'
-                    ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
-                    : 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200'
-              "
-            />
-          </div>
-        </SectionCard>
-
+      <div class="grid items-start gap-6 xl:grid-cols-[1.2fr_1fr]">
         <div class="space-y-6">
-          <SectionCard title="Related Actions">
-            <div class="grid gap-3">
-              <RouterLink
-                v-for="action in licenseRelatedActions"
-                :key="action.label"
-                :to="action.to"
-                class="flex items-center justify-between gap-4 rounded-[22px] border px-4 py-3 text-sm font-medium transition hover:-translate-y-0.5"
-                :class="
-                  action.tone === 'primary'
-                    ? 'border-slate-950 bg-slate-950 text-white hover:bg-slate-800 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500'
-                    : 'border-slate-200/80 bg-slate-50/80 text-slate-700 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200'
+          <SectionCard :title="`${selectedLicense.product} - ${selectedLicense.license_key}`">
+            <div class="grid gap-4 md:grid-cols-3">
+              <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
+                <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">License Scope</p>
+                <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+                  <p><span class="font-medium">Vendor:</span> {{ selectedLicense.vendor }}</p>
+                  <p><span class="font-medium">Type:</span> {{ selectedLicense.license_type }}</p>
+                  <p><span class="font-medium">Expires:</span> {{ selectedLicense.expires_at }}</p>
+                </div>
+              </div>
+
+              <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
+                <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Seat Pulse</p>
+                <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+                  <p><span class="font-medium">Seat Usage:</span> {{ selectedLicense.seats }}</p>
+                  <p><span class="font-medium">Used:</span> {{ selectedLicense.used_seats }}</p>
+                  <p><span class="font-medium">Available:</span> {{ selectedLicense.available_seats }}</p>
+                </div>
+              </div>
+
+              <DetailHighlightCard
+                eyebrow="License Note"
+                :status-label="formatEnumLabel(selectedLicense.status)"
+                :note="selectedLicense.contract_note"
+                icon="KeySquare"
+                :tone="
+                  selectedLicense.status === 'ACTIVE'
+                    ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
+                    : selectedLicense.status === 'WARNING'
+                      ? 'border-amber-200 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10'
+                      : 'border-rose-200 bg-rose-50/80 dark:border-rose-500/20 dark:bg-rose-500/10'
                 "
-              >
-                <span class="inline-flex items-center gap-3">
-                  <span
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
-                    :class="
-                      action.tone === 'primary'
-                        ? 'border-white/20 bg-white/10 text-white'
-                        : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'
-                    "
-                  >
-                    <BaseIcon :name="action.icon" :size="16" />
-                  </span>
-                  {{ action.label }}
-                </span>
-                <BaseIcon name="ArrowRight" :size="16" :class="action.tone === 'primary' ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'" />
-              </RouterLink>
+                :badge-tone="
+                  selectedLicense.status === 'ACTIVE'
+                    ? 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
+                    : selectedLicense.status === 'WARNING'
+                      ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
+                      : 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200'
+                "
+              />
             </div>
           </SectionCard>
 
@@ -485,6 +472,12 @@ const handleDeleteLicense = async (row: Record<string, unknown>) => {
               </div>
             </div>
           </SectionCard>
+        </div>
+
+        <div class="space-y-6">
+          <SectionCard title="Related Actions">
+            <RelatedActionsPanel :actions="licenseRelatedActions" />
+          </SectionCard>
 
           <SectionCard title="Seat Allocation Mix">
             <BaseChart type="donut" :height="320" :options="licenseSeatOptions" :series="licenseSeatSeries" />
@@ -504,26 +497,20 @@ const handleDeleteLicense = async (row: Record<string, unknown>) => {
               Add Assignment
             </button>
           </div>
-          <div class="overflow-hidden rounded-3xl border border-slate-200/80 dark:border-white/10">
-            <div
-              v-for="assignment in licenseAssignments"
-              :key="assignment.id"
-              class="grid gap-3 border-b border-slate-200/70 bg-white/80 px-4 py-4 last:border-b-0 dark:border-white/8 dark:bg-slate-900/50 md:grid-cols-[1fr_0.8fr_0.8fr_0.8fr_1fr_auto]"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ assignment.target }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ assignment.assignee_type }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ assignment.assigned_at }}</p>
-              <span :class="['inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ring-1', assignmentStatusTone[assignment.status]]">
-                {{ assignment.status }}
+          <DetailGridTable :columns="licenseAssignmentColumns" :rows="licenseAssignments" desktop-grid-class="md:grid-cols-[1fr_0.8fr_0.8fr_0.8fr_1fr_auto] gap-3">
+            <template #cell-status="{ row }">
+              <span :class="['inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1', assignmentStatusTone[(row as LicenseAssignmentDetail).status]]">
+                {{ (row as LicenseAssignmentDetail).status }}
               </span>
-              <p class="text-sm text-slate-500 dark:text-slate-400">{{ assignment.note }}</p>
-              <div class="flex items-start justify-end gap-2">
+            </template>
+            <template #cell-actions="{ row }">
+              <div class="flex items-center justify-end gap-2 self-center">
                 <button
-                  v-if="assignment.status === 'ACTIVE'"
+                  v-if="(row as LicenseAssignmentDetail).status === 'ACTIVE'"
                   type="button"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 transition hover:-translate-y-0.5 hover:border-emerald-300 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200"
                   title="Release seat"
-                  @click="releaseSeat(assignment)"
+                  @click="releaseSeat(row as LicenseAssignmentDetail)"
                 >
                   <BaseIcon name="RefreshCcw" :size="16" />
                 </button>
@@ -531,7 +518,7 @@ const handleDeleteLicense = async (row: Record<string, unknown>) => {
                   type="button"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-800 transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200"
                   title="Update assignment"
-                  @click="startEditAssignment(assignment)"
+                  @click="startEditAssignment(row as LicenseAssignmentDetail)"
                 >
                   <BaseIcon name="PencilLine" :size="16" />
                 </button>
@@ -539,13 +526,13 @@ const handleDeleteLicense = async (row: Record<string, unknown>) => {
                   type="button"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-800 transition hover:-translate-y-0.5 hover:border-rose-300 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
                   title="Delete assignment"
-                  @click="assignmentDeleteTarget = assignment.id"
+                  @click="assignmentDeleteTarget = Number((row as LicenseAssignmentDetail).id)"
                 >
                   <BaseIcon name="Trash2" :size="16" />
                 </button>
               </div>
-            </div>
-          </div>
+            </template>
+          </DetailGridTable>
 
           <form
             v-if="assignmentEditorMode"
@@ -591,18 +578,7 @@ const handleDeleteLicense = async (row: Record<string, unknown>) => {
         </SectionCard>
 
         <SectionCard title="Seat Optimization Detail">
-          <div class="overflow-hidden rounded-3xl border border-slate-200/80 dark:border-white/10">
-            <div
-              v-for="row in seatDetailRows"
-              :key="row.id"
-              class="grid gap-2 border-b border-slate-200/70 bg-white/80 px-4 py-4 last:border-b-0 dark:border-white/8 dark:bg-slate-900/50 md:grid-cols-[0.8fr_0.7fr_1fr_1.3fr]"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ row.bucket }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ row.qty }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ row.action }}</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">{{ row.note }}</p>
-            </div>
-          </div>
+          <DetailGridTable :columns="seatDetailColumns" :rows="seatDetailRows" desktop-grid-class="md:grid-cols-[0.8fr_0.7fr_1fr_1.3fr] gap-2" />
         </SectionCard>
       </div>
     </section>

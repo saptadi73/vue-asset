@@ -8,10 +8,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: 'High Risk Assets', value: '14', detail: 'Aset dengan risk score dan replacement pressure tertinggi.', icon: 'ShieldAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
-  { title: 'Replace Soon', value: '9', detail: 'Mendekati expected replacement date atau support end.', icon: 'RefreshCw', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
-  { title: 'Low Remaining Life', value: '11', detail: 'Asset dengan sisa useful life paling pendek.', icon: 'Hourglass', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
-  { title: 'Review Candidates', value: '18', detail: 'Layak dibuka lifecycle review detail atau support end watchlist.', icon: 'FileSearch', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
+  { title: 'High Risk Assets', value: '14', detail: 'Risk score tertinggi.', icon: 'ShieldAlert', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
+  { title: 'Replace Soon', value: '9', detail: 'Mendekati replacement.', icon: 'RefreshCw', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: 'Low Remaining Life', value: '11', detail: 'Sisa usia terpendek.', icon: 'Hourglass', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
+  { title: 'Review Candidates', value: '18', detail: 'Perlu review lanjutan.', icon: 'FileSearch', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
 ]
 
 const riskOptions: ApexOptions = {
@@ -57,17 +57,9 @@ const columns: DataTableColumn[] = [
       <MetricCard v-for="item in metrics" :key="item.title" :item="item" />
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+    <section>
       <SectionCard title="Risk Attention List" description="Skor risiko kasar untuk kandidat replacement dan lifecycle review.">
         <BaseChart type="bar" :height="320" :options="riskOptions" :series="riskSeries" />
-      </SectionCard>
-
-      <SectionCard title="Build Strategy" description="Panduan implementasi frontend sesuai blueprint.">
-        <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          <p>Gunakan `GET /api/v1/assets` untuk screening awal kandidat risk dan replacement.</p>
-          <p>Lifecycle review yang lebih detail sebaiknya dibuka saat user drilldown ke `GET /api/v1/assets/{asset_id}/lifecycle-reviews`.</p>
-          <p>Report ini cocok menampilkan support end, replacement priority, dan remaining useful life dalam satu layar.</p>
-        </div>
       </SectionCard>
     </section>
 

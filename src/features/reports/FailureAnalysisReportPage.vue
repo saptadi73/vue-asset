@@ -8,10 +8,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: 'Failure Count', value: '28', detail: 'Total failure case pada periode analisis aktif.', icon: 'Bug', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
-  { title: 'Repeat Failure', value: '9', detail: 'Kasus berulang yang memerlukan RCA lebih dalam.', icon: 'RefreshCcw', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
-  { title: 'Top Root Cause', value: 'Bearing Wear', detail: 'Root cause paling dominan di breakdown equipment.', icon: 'SearchCode', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
-  { title: 'Highest Downtime', value: '41 h', detail: 'Akumulasi downtime tertinggi dari asset failure concentrate.', icon: 'ClockAlert', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
+  { title: 'Failure Count', value: '28', detail: 'Total failure aktif.', icon: 'Bug', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
+  { title: 'Repeat Failure', value: '9', detail: 'Kasus berulang.', icon: 'RefreshCcw', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: 'Top Root Cause', value: 'Bearing Wear', detail: 'Root cause paling dominan.', icon: 'SearchCode', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
+  { title: 'Highest Downtime', value: '41 h', detail: 'Downtime tertinggi.', icon: 'ClockAlert', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
 ]
 
 const modeOptions: ApexOptions = {
@@ -78,24 +78,14 @@ const failedColumns: DataTableColumn[] = [
       </SectionCard>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-      <DataTable
-        title="Top Failed Assets"
-        description="Asset dengan failure count dan downtime tertinggi."
-        :rows="failedRows"
-        :columns="failedColumns"
-        search-placeholder="Cari asset..."
-        :search-keys="['asset', 'severity']"
-        :page-size="4"
-      />
-
-      <SectionCard title="Repeat Failure Insight" description="Panduan implementasi frontend dari blueprint failure analysis.">
-        <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          <p>Gunakan filter `asset_id`, `failure_mode_id`, `root_cause_code_id`, `date_from`, dan `date_to`.</p>
-          <p>Tonjolkan repeat failure agar engineer bisa melihat pola yang tidak selesai tuntas di RCA sebelumnya.</p>
-          <p>Top failed assets perlu bisa menjadi drilldown ke histori maintenance dan work order terkait.</p>
-        </div>
-      </SectionCard>
-    </section>
+    <DataTable
+      title="Top Failed Assets"
+      description="Asset dengan failure count dan downtime tertinggi."
+      :rows="failedRows"
+      :columns="failedColumns"
+      search-placeholder="Cari asset..."
+      :search-keys="['asset', 'severity']"
+      :page-size="4"
+    />
   </div>
 </template>

@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailGridTable from '@/components/DetailGridTable.vue'
 import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
@@ -20,7 +21,7 @@ import {
   type TrackingScanEvent,
   type TrackingSession,
 } from '@/services/tracking'
-import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, DetailGridColumn, MetricCardItem } from '@/types/app'
 import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('tracking')!
@@ -73,6 +74,11 @@ const columns: DataTableColumn[] = [
   },
   { key: 'verified', label: 'Verified' },
   { key: 'unmatched', label: 'Unmatched' },
+]
+const expectedAssetColumns: DetailGridColumn[] = [
+  { key: 'code', label: 'Code', valueClass: 'text-sm font-semibold text-slate-900 dark:text-white' },
+  { key: 'name', label: 'Asset' },
+  { key: 'location', label: 'Location', valueClass: 'text-sm text-slate-500 dark:text-slate-400' },
 ]
 
 const rows = ref<TrackingRow[]>([])
@@ -705,20 +711,12 @@ onBeforeUnmount(() => {
             </SectionCard>
 
             <SectionCard title="Expected Asset Snapshot">
-              <div v-if="expectedAssetRows.length" class="overflow-hidden rounded-3xl border border-slate-200/80 dark:border-white/10">
-                <div
-                  v-for="item in expectedAssetRows"
-                  :key="item.id"
-                  class="grid gap-2 border-b border-slate-200/70 bg-white/80 px-4 py-4 last:border-b-0 dark:border-white/8 dark:bg-slate-900/50 md:grid-cols-[0.8fr_1.2fr_1fr]"
-                >
-                  <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ item.code }}</p>
-                  <p class="text-sm text-slate-700 dark:text-slate-200">{{ item.name }}</p>
-                  <p class="text-sm text-slate-500 dark:text-slate-400">{{ item.location }}</p>
-                </div>
-              </div>
-              <div v-else class="rounded-[22px] border border-dashed border-slate-200/80 bg-slate-50/70 px-4 py-5 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950/30 dark:text-slate-400">
-                Snapshot expected asset belum tersedia atau backend belum mengembalikan daftar expected items untuk sesi ini.
-              </div>
+              <DetailGridTable
+                :columns="expectedAssetColumns"
+                :rows="expectedAssetRows"
+                desktop-grid-class="md:grid-cols-[0.8fr_1.2fr_1fr] gap-2"
+                empty-message="Snapshot expected asset belum tersedia atau backend belum mengembalikan daftar expected items untuk sesi ini."
+              />
             </SectionCard>
           </div>
 

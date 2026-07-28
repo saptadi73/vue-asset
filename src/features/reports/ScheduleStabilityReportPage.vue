@@ -8,10 +8,10 @@ import SectionCard from '@/components/SectionCard.vue'
 import type { DataTableColumn, MetricCardItem } from '@/types/app'
 
 const metrics: MetricCardItem[] = [
-  { title: 'Rescheduled Schedules', value: '17', detail: 'Schedule dengan `reschedule_count > 0` pada periode aktif.', icon: 'CalendarSync', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
-  { title: 'Postponed Status', value: '9', detail: 'Item yang masih tertahan dan perlu keputusan planner.', icon: 'PauseCircle', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
-  { title: 'Most Unstable Source', value: 'PREDICTIVE', detail: 'Source yang paling banyak memicu perubahan jadwal.', icon: 'Radar', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
-  { title: 'Need Event Drilldown', value: '6', detail: 'Schedule yang layak dibuka event history-nya untuk audit.', icon: 'History', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
+  { title: 'Rescheduled Schedules', value: '17', detail: 'Sering mengalami perubahan.', icon: 'CalendarSync', tone: 'bg-violet-500/15 text-violet-700 ring-violet-400/20 dark:text-violet-200' },
+  { title: 'Postponed Status', value: '9', detail: 'Masih tertahan.', icon: 'PauseCircle', tone: 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200' },
+  { title: 'Most Unstable Source', value: 'PREDICTIVE', detail: 'Paling sering memicu perubahan.', icon: 'Radar', tone: 'bg-sky-500/15 text-sky-700 ring-sky-400/20 dark:text-sky-200' },
+  { title: 'Need Event Drilldown', value: '6', detail: 'Layak diaudit lebih lanjut.', icon: 'History', tone: 'bg-rose-500/15 text-rose-700 ring-rose-400/20 dark:text-rose-200' },
 ]
 
 const statusOptions: ApexOptions = {
@@ -70,7 +70,7 @@ const columns: DataTableColumn[] = [
       </SectionCard>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+    <section>
       <DataTable
         title="Most Rescheduled Schedules"
         description="Daftar schedule yang paling sering berubah dan layak diaudit event history-nya."
@@ -80,14 +80,6 @@ const columns: DataTableColumn[] = [
         :search-keys="['schedule_no', 'asset', 'source', 'status']"
         :page-size="4"
       />
-
-      <SectionCard title="Build Strategy" description="Strategi build sesuai dokumentasi implementasi.">
-        <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          <p>Panggil `GET /api/v1/maintenance/schedules` untuk daftar utama dan filter schedule dengan `reschedule_count > 0`.</p>
-          <p>Event history sebaiknya lazy load dari `GET /api/v1/maintenance/schedules/{schedule_id}/events` hanya saat row dibuka user.</p>
-          <p>Report ini sangat cocok untuk planner dan supervisor karena menunjukkan bukti audit perubahan planning.</p>
-        </div>
-      </SectionCard>
     </section>
   </div>
 </template>

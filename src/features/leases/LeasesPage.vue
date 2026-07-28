@@ -6,13 +6,16 @@ import { RouterLink } from 'vue-router'
 import BaseChart from '@/components/BaseChart.vue'
 import BaseIcon from '@/components/BaseIcon.vue'
 import DataTable from '@/components/DataTable.vue'
+import DetailGridTable from '@/components/DetailGridTable.vue'
 import DetailHighlightCard from '@/components/DetailHighlightCard.vue'
+import DocumentStatusList from '@/components/DocumentStatusList.vue'
 import MetricCard from '@/components/MetricCard.vue'
+import RelatedActionsPanel from '@/components/RelatedActionsPanel.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import { getCrudConfig } from '@/config/crud'
 import { liveSeedIds } from '@/data/liveSeedIds'
 import { deleteCrudRecord } from '@/services/crud'
-import type { DataTableColumn, MetricCardItem } from '@/types/app'
+import type { DataTableColumn, DetailGridColumn, DocumentReference, MetricCardItem, RelatedActionItem } from '@/types/app'
 import { formatEnumLabel } from '@/utils/formatters'
 
 const crudConfig = getCrudConfig('leases')!
@@ -115,6 +118,24 @@ const paymentStatusTone: Record<LeasePaymentDetail['status'], string> = {
   PAID: 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200',
 }
 
+const leaseAssetColumns: DetailGridColumn[] = [
+  { key: 'asset_code', label: 'Asset Code', valueClass: 'text-sm font-semibold text-slate-900 dark:text-white' },
+  { key: 'asset_name', label: 'Asset Name' },
+  { key: 'lease_period', label: 'Lease Period' },
+  { key: 'cost_center', label: 'Cost Center' },
+  { key: 'note', label: 'Note', valueClass: 'text-sm text-slate-500 dark:text-slate-400' },
+  { key: 'actions', label: 'Actions', align: 'right' },
+]
+
+const leasePaymentColumns: DetailGridColumn[] = [
+  { key: 'invoice', label: 'Invoice', valueClass: 'text-sm font-semibold text-slate-900 dark:text-white' },
+  { key: 'period', label: 'Period' },
+  { key: 'due_date', label: 'Due Date' },
+  { key: 'amount', label: 'Amount' },
+  { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Actions', align: 'right' },
+]
+
 const rows: LeaseRow[] = [
   {
     id: 1,
@@ -213,7 +234,40 @@ const summaryRows = computed(() => [
   { label: 'Renewal Window', value: selectedLease.value.renewal_window, note: 'Panduan review sebelum renewal atau closeout.' },
   { label: 'Payment Cycle', value: selectedLease.value.payment_cycle, note: 'Frekuensi tagihan dan kontrol payment schedule.' },
 ])
-const leaseRelatedActions = computed(() => [
+const leaseDocuments = computed<DocumentReference[]>(() => {
+  const documentMap: Record<string, DocumentReference[]> = {
+    'LS-2026-001': [
+      {
+        id: 'lease-contract-ls-2026-001',
+        label: 'Lease Contract',
+        fileName: 'LS-2026-001-contract.txt',
+        href: '/documents/contracts/LS-2026-001-contract.txt',
+        note: 'Dokumen kontrak lease aktif untuk billing, insurance, dan handover clause.',
+        kind: 'contract',
+      },
+    ],
+    'LS-2026-003': [
+      {
+        id: 'lease-contract-ls-2026-003',
+        label: 'Lease Contract',
+        fileName: 'LS-2026-003-contract.txt',
+        href: '/documents/contracts/LS-2026-003-contract.txt',
+        note: 'Dokumen kontrak lease perangkat IT dan review utilisasi.',
+        kind: 'contract',
+      },
+    ],
+  }
+
+  return documentMap[selectedLease.value.contract] ?? [
+    {
+      id: `lease-contract-${selectedLease.value.contract}`,
+      label: 'Lease Contract',
+      note: 'Tidak ada dokumen kontrak lease untuk item ini.',
+      kind: 'contract',
+    },
+  ]
+})
+const leaseRelatedActions = computed<RelatedActionItem[]>(() => [
   {
     label: 'Update Lease',
     to: `/leases/${selectedLease.value.id}/edit`,
@@ -451,79 +505,48 @@ const handleDeleteLease = async (row: Record<string, unknown>) => {
         @select="selectedLeaseId = String($event.id)"
       />
 
-      <div class="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <SectionCard :title="`${selectedLease.contract} - ${selectedLease.vendor}`">
-          <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
-              <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Contract Scope</p>
-              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
-                <p><span class="font-medium">Period:</span> {{ selectedLease.period }}</p>
-                <p><span class="font-medium">Type:</span> {{ selectedLease.contract_type }}</p>
-                <p><span class="font-medium">Monthly Payment:</span> {{ selectedLease.monthly_payment }}</p>
-              </div>
-            </div>
-
-            <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
-              <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Billing Pulse</p>
-              <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
-                <p><span class="font-medium">Next Due:</span> {{ selectedLease.next_due_date }}</p>
-                <p><span class="font-medium">Cycle:</span> {{ selectedLease.payment_cycle }}</p>
-                <p><span class="font-medium">Payment Status:</span> {{ selectedLease.payment_status }}</p>
-              </div>
-            </div>
-
-            <DetailHighlightCard
-              eyebrow="Contract Note"
-              :status-label="formatEnumLabel(selectedLease.status)"
-              :note="selectedLease.scope_note"
-              icon="FileSpreadsheet"
-              :tone="
-                selectedLease.status === 'ACTIVE'
-                  ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
-                  : selectedLease.status === 'REVIEW'
-                    ? 'border-amber-200 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10'
-                    : 'border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-slate-950/40'
-              "
-              :badge-tone="
-                selectedLease.status === 'ACTIVE'
-                  ? 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
-                  : selectedLease.status === 'REVIEW'
-                    ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
-                    : 'bg-slate-200/80 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
-              "
-            />
-          </div>
-        </SectionCard>
-
+      <div class="grid items-start gap-6 xl:grid-cols-[1.2fr_1fr]">
         <div class="space-y-6">
-          <SectionCard title="Related Actions">
-            <div class="grid gap-3">
-              <RouterLink
-                v-for="action in leaseRelatedActions"
-                :key="action.label"
-                :to="action.to"
-                class="flex items-center justify-between gap-4 rounded-[22px] border px-4 py-3 text-sm font-medium transition hover:-translate-y-0.5"
-                :class="
-                  action.tone === 'primary'
-                    ? 'border-slate-950 bg-slate-950 text-white hover:bg-slate-800 dark:border-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500'
-                    : 'border-slate-200/80 bg-slate-50/80 text-slate-700 hover:border-sky-300 hover:bg-white dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-200'
+          <SectionCard :title="`${selectedLease.contract} - ${selectedLease.vendor}`">
+            <div class="grid gap-4 md:grid-cols-3">
+              <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
+                <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Contract Scope</p>
+                <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+                  <p><span class="font-medium">Period:</span> {{ selectedLease.period }}</p>
+                  <p><span class="font-medium">Type:</span> {{ selectedLease.contract_type }}</p>
+                  <p><span class="font-medium">Monthly Payment:</span> {{ selectedLease.monthly_payment }}</p>
+                </div>
+              </div>
+
+              <div class="rounded-[22px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-slate-950/40">
+                <p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">Billing Pulse</p>
+                <div class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+                  <p><span class="font-medium">Next Due:</span> {{ selectedLease.next_due_date }}</p>
+                  <p><span class="font-medium">Cycle:</span> {{ selectedLease.payment_cycle }}</p>
+                  <p><span class="font-medium">Payment Status:</span> {{ selectedLease.payment_status }}</p>
+                </div>
+              </div>
+
+              <DetailHighlightCard
+                eyebrow="Contract Note"
+                :status-label="formatEnumLabel(selectedLease.status)"
+                :note="selectedLease.scope_note"
+                icon="FileSpreadsheet"
+                :tone="
+                  selectedLease.status === 'ACTIVE'
+                    ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
+                    : selectedLease.status === 'REVIEW'
+                      ? 'border-amber-200 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10'
+                      : 'border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-slate-950/40'
                 "
-              >
-                <span class="inline-flex items-center gap-3">
-                  <span
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border"
-                    :class="
-                      action.tone === 'primary'
-                        ? 'border-white/20 bg-white/10 text-white'
-                        : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'
-                    "
-                  >
-                    <BaseIcon :name="action.icon" :size="16" />
-                  </span>
-                  {{ action.label }}
-                </span>
-                <BaseIcon name="ArrowRight" :size="16" :class="action.tone === 'primary' ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'" />
-              </RouterLink>
+                :badge-tone="
+                  selectedLease.status === 'ACTIVE'
+                    ? 'bg-emerald-500/15 text-emerald-700 ring-emerald-400/20 dark:text-emerald-200'
+                    : selectedLease.status === 'REVIEW'
+                      ? 'bg-amber-500/15 text-amber-700 ring-amber-400/20 dark:text-amber-200'
+                      : 'bg-slate-200/80 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
+                "
+              />
             </div>
           </SectionCard>
 
@@ -544,6 +567,16 @@ const handleDeleteLease = async (row: Record<string, unknown>) => {
               </div>
             </div>
           </SectionCard>
+        </div>
+
+        <div class="space-y-6">
+          <SectionCard title="Related Actions">
+            <RelatedActionsPanel :actions="leaseRelatedActions" />
+          </SectionCard>
+
+          <SectionCard title="Lease Documents" description="Dokumen kontrak yang terkait dengan lease ini.">
+            <DocumentStatusList :documents="leaseDocuments" />
+          </SectionCard>
 
           <SectionCard title="Lease Cost Projection">
             <BaseChart type="bar" :height="300" :options="leaseExposureOptions" :series="leaseExposureSeries" />
@@ -563,23 +596,14 @@ const handleDeleteLease = async (row: Record<string, unknown>) => {
               Add Lease Asset
             </button>
           </div>
-          <div class="overflow-hidden rounded-3xl border border-slate-200/80 dark:border-white/10">
-            <div
-              v-for="item in leaseAssets"
-              :key="item.id"
-              class="grid gap-3 border-b border-slate-200/70 bg-white/80 px-4 py-4 last:border-b-0 dark:border-white/8 dark:bg-slate-900/50 md:grid-cols-[0.8fr_1.1fr_1fr_1fr_1fr_auto]"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ item.asset_code }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ item.asset_name }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ item.lease_period }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ item.cost_center }}</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">{{ item.note }}</p>
-              <div class="flex items-start justify-end gap-2">
+          <DetailGridTable :columns="leaseAssetColumns" :rows="leaseAssets" desktop-grid-class="md:grid-cols-[0.8fr_1.1fr_1fr_1fr_1fr_auto] gap-3">
+            <template #cell-actions="{ row }">
+              <div class="flex items-center justify-end gap-2 self-center">
                 <button
                   type="button"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-800 transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200"
                   title="Update asset"
-                  @click="startEditAsset(item)"
+                  @click="startEditAsset(row as LeaseAssetDetail)"
                 >
                   <BaseIcon name="PencilLine" :size="16" />
                 </button>
@@ -587,13 +611,13 @@ const handleDeleteLease = async (row: Record<string, unknown>) => {
                   type="button"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-800 transition hover:-translate-y-0.5 hover:border-rose-300 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
                   title="Delete asset"
-                  @click="childDeleteTarget = { type: 'asset', id: item.id }"
+                  @click="childDeleteTarget = { type: 'asset', id: Number((row as LeaseAssetDetail).id) }"
                 >
                   <BaseIcon name="Trash2" :size="16" />
                 </button>
               </div>
-            </div>
-          </div>
+            </template>
+          </DetailGridTable>
 
           <form
             v-if="assetEditorMode"
@@ -642,25 +666,19 @@ const handleDeleteLease = async (row: Record<string, unknown>) => {
               Add Payment Schedule
             </button>
           </div>
-          <div class="overflow-hidden rounded-3xl border border-slate-200/80 dark:border-white/10">
-            <div
-              v-for="payment in leasePayments"
-              :key="payment.id"
-              class="grid gap-3 border-b border-slate-200/70 bg-white/80 px-4 py-4 last:border-b-0 dark:border-white/8 dark:bg-slate-900/50 md:grid-cols-[0.9fr_0.8fr_0.8fr_0.9fr_0.8fr_auto]"
-            >
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ payment.invoice }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ payment.period }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ payment.due_date }}</p>
-              <p class="text-sm text-slate-700 dark:text-slate-200">{{ payment.amount }}</p>
-              <span :class="['inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ring-1', paymentStatusTone[payment.status]]">
-                {{ payment.status }}
+          <DetailGridTable :columns="leasePaymentColumns" :rows="leasePayments" desktop-grid-class="md:grid-cols-[0.9fr_0.8fr_0.8fr_0.9fr_0.8fr_auto] gap-3">
+            <template #cell-status="{ row }">
+              <span :class="['inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1', paymentStatusTone[(row as LeasePaymentDetail).status]]">
+                {{ (row as LeasePaymentDetail).status }}
               </span>
-              <div class="flex items-start justify-end gap-2">
+            </template>
+            <template #cell-actions="{ row }">
+              <div class="flex items-center justify-end gap-2 self-center">
                 <button
                   type="button"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-800 transition hover:-translate-y-0.5 hover:border-sky-300 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200"
                   title="Update payment"
-                  @click="startEditPayment(payment)"
+                  @click="startEditPayment(row as LeasePaymentDetail)"
                 >
                   <BaseIcon name="PencilLine" :size="16" />
                 </button>
@@ -668,13 +686,13 @@ const handleDeleteLease = async (row: Record<string, unknown>) => {
                   type="button"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-800 transition hover:-translate-y-0.5 hover:border-rose-300 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200"
                   title="Delete payment"
-                  @click="childDeleteTarget = { type: 'payment', id: payment.id }"
+                  @click="childDeleteTarget = { type: 'payment', id: Number((row as LeasePaymentDetail).id) }"
                 >
                   <BaseIcon name="Trash2" :size="16" />
                 </button>
               </div>
-            </div>
-          </div>
+            </template>
+          </DetailGridTable>
 
           <form
             v-if="paymentEditorMode"
