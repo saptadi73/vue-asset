@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
+import CrudActionPanel from '@/components/CrudActionPanel.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
@@ -75,7 +76,16 @@ const endpoints: EndpointReference[] = [
         :search-keys="['product', 'license_key', 'status']"
       />
 
-      <ApiEndpointList title="License API Map" :endpoints="endpoints" />
+      <div class="space-y-6">
+        <CrudActionPanel
+          title="License CRUD"
+          description="Kelola data lisensi software dengan alur form yang konsisten."
+          create-to="/licenses/new"
+          edit-to="/licenses/seed-license/edit"
+          delete-to="/licenses/seed-license/delete"
+        />
+        <ApiEndpointList title="License API Map" :endpoints="endpoints" />
+      </div>
     </section>
   </div>
 </template>

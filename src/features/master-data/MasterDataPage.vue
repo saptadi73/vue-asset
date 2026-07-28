@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
+import CrudActionPanel from '@/components/CrudActionPanel.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
@@ -77,6 +78,13 @@ const endpoints: EndpointReference[] = [
       />
 
       <div class="space-y-6">
+        <CrudActionPanel
+          title="Master Data CRUD"
+          description="Kelola category, class, location, atau partner lewat form generik."
+          create-to="/master-data/new"
+          edit-to="/master-data/seed-master/edit"
+          delete-to="/master-data/seed-master/delete"
+        />
         <SectionCard title="Why It Matters" description="Master data dibuat tetap ringkas tetapi kuat.">
           <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             <p>Modul master data akan menjadi sumber dropdown, filter, dan validasi untuk feature transactional.</p>

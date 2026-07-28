@@ -134,13 +134,23 @@ onMounted(() => {
             </div>
           </div>
 
-          <nav class="flex-1 space-y-3 overflow-y-auto pr-1">
+          <nav class="flex-1 overflow-y-auto pr-1" :class="isDesktopSidebarCollapsed ? 'space-y-4' : 'space-y-3'">
           <div
             v-for="group in navigationGroups"
             :key="group.id"
-            class="rounded-[26px] border border-slate-200/70 bg-slate-50/80 p-3 shadow-sm transition hover:border-sky-200/80 hover:bg-white/85 dark:border-white/10 dark:bg-slate-900/55 dark:hover:border-sky-500/20 dark:hover:bg-slate-900/72"
+            class="transition"
+            :class="
+              isDesktopSidebarCollapsed
+                ? 'relative px-1 pt-4 first:pt-1'
+                : 'rounded-[26px] border border-slate-200/70 bg-slate-50/80 p-3 shadow-sm hover:border-sky-200/80 hover:bg-white/85 dark:border-white/10 dark:bg-slate-900/55 dark:hover:border-sky-500/20 dark:hover:bg-slate-900/72'
+            "
           >
+            <div
+              v-if="isDesktopSidebarCollapsed"
+              class="pointer-events-none absolute top-0 left-1/2 h-px w-10 -translate-x-1/2 bg-slate-200 dark:bg-white/10"
+            />
             <button
+              v-if="!isDesktopSidebarCollapsed"
               type="button"
               class="flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-white/80 dark:hover:bg-slate-800/70"
               @click="toggleGroup(group.id)"
@@ -197,25 +207,25 @@ onMounted(() => {
                 </span>
               </RouterLink>
             </div>
-            <div v-else-if="isDesktopSidebarCollapsed" class="mt-2 space-y-1.5">
+            <div v-else-if="isDesktopSidebarCollapsed" class="space-y-2">
               <RouterLink
                 v-for="item in group.items"
                 :key="item.to"
                 :to="item.to"
-                class="group flex justify-center rounded-[22px] px-2 py-2.5 transition"
+                class="group flex justify-center transition"
                 :class="
                   route.path === item.to
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-[linear-gradient(135deg,rgba(14,165,233,0.22),rgba(30,41,59,0.9))] dark:text-sky-100'
-                    : 'text-slate-600 hover:bg-white hover:shadow-sm dark:text-slate-300 dark:hover:bg-slate-800/70'
+                    ? 'text-white dark:text-sky-100'
+                    : 'text-slate-500 dark:text-slate-300'
                 "
                 :title="item.label"
               >
                 <span
-                  class="inline-flex rounded-2xl p-2.5 ring-1 transition"
+                  class="inline-flex h-12 w-12 items-center justify-center rounded-2xl transition"
                   :class="
                     route.path === item.to
-                      ? 'bg-white/10 ring-white/10'
-                      : 'bg-slate-100 text-slate-700 ring-slate-200 group-hover:bg-sky-50 group-hover:text-sky-700 dark:bg-slate-950 dark:text-slate-200 dark:ring-white/10'
+                      ? 'bg-slate-950 shadow-[0_16px_34px_-18px_rgba(15,23,42,0.7)] ring-1 ring-slate-800/80 dark:bg-[linear-gradient(180deg,#0f172a,#1e293b)] dark:ring-white/10'
+                      : 'bg-slate-100/90 ring-1 ring-slate-200 group-hover:bg-white group-hover:text-sky-700 group-hover:shadow-sm dark:bg-slate-900/70 dark:ring-white/10 dark:group-hover:bg-slate-800'
                   "
                 >
                   <BaseIcon :name="item.icon" :size="16" />

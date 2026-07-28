@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
+import CrudActionPanel from '@/components/CrudActionPanel.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
@@ -80,7 +81,16 @@ const endpoints: EndpointReference[] = [
         :search-keys="['number', 'from', 'to', 'purpose']"
       />
 
-      <ApiEndpointList title="Transfer API Map" :endpoints="endpoints" />
+      <div class="space-y-6">
+        <CrudActionPanel
+          title="Transfer CRUD"
+          description="Kelola draft transfer dengan halaman aksi yang terpisah."
+          create-to="/transfers/new"
+          edit-to="/transfers/seed-transfer/edit"
+          delete-to="/transfers/seed-transfer/delete"
+        />
+        <ApiEndpointList title="Transfer API Map" :endpoints="endpoints" />
+      </div>
     </section>
   </div>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
+import CrudActionPanel from '@/components/CrudActionPanel.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
@@ -76,7 +77,16 @@ const endpoints: EndpointReference[] = [
         :search-keys="['contract', 'vendor', 'period']"
       />
 
-      <ApiEndpointList title="Lease API Map" :endpoints="endpoints" />
+      <div class="space-y-6">
+        <CrudActionPanel
+          title="Lease CRUD"
+          description="Masuk ke halaman create, update, atau delete kontrak lease."
+          create-to="/leases/new"
+          edit-to="/leases/seed-lease/edit"
+          delete-to="/leases/seed-lease/delete"
+        />
+        <ApiEndpointList title="Lease API Map" :endpoints="endpoints" />
+      </div>
     </section>
   </div>
 </template>

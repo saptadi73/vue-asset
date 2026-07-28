@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
+import CrudActionPanel from '@/components/CrudActionPanel.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import type { DataTableColumn, EndpointReference, MetricCardItem } from '@/types/app'
@@ -73,7 +74,16 @@ const endpoints: EndpointReference[] = [
         :search-keys="['session', 'location', 'status']"
       />
 
-      <ApiEndpointList title="Tracking API Map" :endpoints="endpoints" />
+      <div class="space-y-6">
+        <CrudActionPanel
+          title="Stocktake CRUD"
+          description="Buat, ubah, atau hapus sesi stocktake dari halaman terpisah."
+          create-to="/tracking/new"
+          edit-to="/tracking/seed-stocktake/edit"
+          delete-to="/tracking/seed-stocktake/delete"
+        />
+        <ApiEndpointList title="Tracking API Map" :endpoints="endpoints" />
+      </div>
     </section>
   </div>
 </template>

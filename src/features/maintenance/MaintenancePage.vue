@@ -3,6 +3,7 @@ import type { ApexOptions } from 'apexcharts'
 
 import ApiEndpointList from '@/components/ApiEndpointList.vue'
 import BaseChart from '@/components/BaseChart.vue'
+import CrudActionPanel from '@/components/CrudActionPanel.vue'
 import DataTable from '@/components/DataTable.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import SectionCard from '@/components/SectionCard.vue'
@@ -132,7 +133,16 @@ const endpoints: EndpointReference[] = [
         <BaseChart type="line" :height="300" :options="trendOptions" :series="trendSeries" />
       </SectionCard>
 
-      <ApiEndpointList title="Maintenance API Map" :endpoints="endpoints" />
+      <div class="space-y-6">
+        <CrudActionPanel
+          title="Maintenance CRUD"
+          description="Kelola maintenance request melalui halaman create, update, dan delete."
+          create-to="/maintenance/new"
+          edit-to="/maintenance/seed-maintenance/edit"
+          delete-to="/maintenance/seed-maintenance/delete"
+        />
+        <ApiEndpointList title="Maintenance API Map" :endpoints="endpoints" />
+      </div>
     </section>
 
     <DataTable
